@@ -1,0 +1,436 @@
+// Providr — NDIS provider + support coordination platform
+// Tenancy: Org is the tenant boundary. A User can belong to N Orgs.
+// Each Org holds zero, one, or both portal entitlements (Provider, SC).
+// Hybrid same-org case requires a signed ConflictOfInterestForm.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Tenancy & identity ────────────────────────────────────────────────
+
+enum Portal {
+  PROVIDER
+  SC
+}
+
+enum OrgRole {
+  OWNER
+  ROSTERING_MANAGER
+  CARE_MANAGER
+  COMPLIANCE_MANAGER
+  OFFICE_ADMIN
+  SUPPORT_WORKER
+  SUPPORT_COORDINATOR
+}
+
+model Org {
+  id                     String  @id @default(cuid())
+  legalName              String
+  tradingName            String?
+  abn                    String? @unique
+  ndisRegistrationNumber String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entitlements           OrgEntitlement[]
+  memberships            OrgMembership[]
+  conflictOfInterestForm ConflictOfInterestForm?
+
+  participants Participant[]
+  workers      Worker[]
+  shifts       Shift[]
+  incidents    Incident[]
+  carePlans    CarePlan[]
+}
+
+model OrgEntitlement {
+  id        String    @id @default(cuid())
+  orgId     String
+  org       Org       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  portal    Portal
+  active    Boolean   @default(true)
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@unique([orgId, portal])
+}
+
+model ConflictOfInterestForm {
+  id             String    @id @default(cuid())
+  orgId          String    @unique
+  org            Org       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  signedAt       DateTime?
+  signedByUserId String?
+  documentUrl    String?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  firstName     String?
+  lastName      String?
+  phone         String?   // Stored as E.164 (e.g. "+61412345678")
+  passwordHash  String?
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  memberships OrgMembership[]
+  accounts    Account[]
+  sessions    Session[]
+}
+
+model OrgMembership {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orgId    String
+  org      Org       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  roles    OrgRole[]
+  joinedAt DateTime  @default(now())
+
+  @@unique([userId, orgId])
+}
+
+// ─── Auth.js tables ────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Domain — Provider portal MVP entities ─────────────────────────────
+
+model Participant {
+  id          String    @id @default(cuid())
+  orgId       String
+  org         Org       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  ndisNumber  String?
+  firstName   String
+  lastName    String
+  dateOfBirth DateTime?
+  pronouns    String?
+  email       String?
+  phone       String?
+  address     String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  plans             Plan[]
+  shifts            Shift[]
+  incidents         Incident[]
+  serviceAgreements ServiceAgreement[]
+  carePlans         CarePlan[]
+}
+
+// NDIS plans live under a participant. A plan has a date range and a total
+// budget; the budget splits across the three buckets (Core, Capacity,
+// Capital). Amounts are stored in cents (AUD) to avoid floating-point
+// rounding when tracking spend.
+enum PlanStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+}
+
+enum BudgetCategory {
+  CORE
+  CAPACITY
+  CAPITAL
+}
+
+model Plan {
+  id             String     @id @default(cuid())
+  participantId  String
+  participant    Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  ndisPlanNumber String?
+  startDate      DateTime
+  endDate        DateTime
+  totalCents     Int
+  status         PlanStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  budgets PlanBudget[]
+
+  @@index([participantId, status])
+}
+
+model PlanBudget {
+  id          String         @id @default(cuid())
+  planId      String
+  plan        Plan           @relation(fields: [planId], references: [id], onDelete: Cascade)
+  category    BudgetCategory
+  totalCents  Int
+  spentCents  Int            @default(0)
+
+  @@unique([planId, category])
+}
+
+// Service agreement between the provider and the participant — Phase 2 of
+// the participant lifecycle (Provider Scene B) and one of the compliance
+// iceberg artefacts. v1 stores metadata + an optional URL to the signed
+// document; file upload to object storage comes later.
+enum ServiceAgreementStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+model ServiceAgreement {
+  id            String                 @id @default(cuid())
+  participantId String
+  participant   Participant            @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  startDate     DateTime
+  endDate       DateTime?
+  signedAt      DateTime?
+  // External URL (kept for back-compat — Google Drive / SharePoint links).
+  documentUrl   String?
+  // Locally-uploaded file: `uploadedFileKey` is the storage filename
+  // (UUID + extension), `uploadedFileName` is the original name shown in
+  // the UI. Stream the file via /api/uploads/[key] which checks org access.
+  uploadedFileKey  String?
+  uploadedFileName String?
+  notes         String?                @db.Text
+  status        ServiceAgreementStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([participantId, status])
+}
+
+// Care plan — Phase 3 of the lifecycle. One per participant at a time.
+// Goals link supports to outcomes; "Walk to the park — one of Sarah's
+// social goals" from Provider Scene C lives here.
+enum CarePlanStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model CarePlan {
+  id            String         @id @default(cuid())
+  orgId         String
+  org           Org            @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant    @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  status        CarePlanStatus @default(DRAFT)
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  summary       String?        @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  goals Goal[]
+
+  @@index([participantId, status])
+}
+
+enum GoalCategory {
+  SOCIAL
+  PHYSICAL
+  COMMUNICATION
+  INDEPENDENT_LIVING
+  COMMUNITY_PARTICIPATION
+  EMPLOYMENT
+  OTHER
+}
+
+enum GoalStatus {
+  IN_PROGRESS
+  ACHIEVED
+  PAUSED
+  DROPPED
+}
+
+model Goal {
+  id          String       @id @default(cuid())
+  carePlanId  String
+  carePlan    CarePlan     @relation(fields: [carePlanId], references: [id], onDelete: Cascade)
+  title       String
+  description String?      @db.Text
+  category    GoalCategory @default(OTHER)
+  status      GoalStatus   @default(IN_PROGRESS)
+  targetDate  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([carePlanId, status])
+}
+
+// Provider Scene 4 distinguishes three teams: daily helpers (support
+// workers), the therapy team (allied health), and the behaviour expert.
+// One `Worker` model with a type discriminator covers all three for v1.
+enum WorkerType {
+  SUPPORT_WORKER
+  ALLIED_HEALTH
+  BEHAVIOUR_SUPPORT
+}
+
+model Worker {
+  id        String     @id @default(cuid())
+  orgId     String
+  org       Org        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId    String?
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  type      WorkerType @default(SUPPORT_WORKER)
+
+  // Compliance certificates — used to gate rostering when expired
+  ndisWorkerCheckExpiry DateTime?
+  firstAidExpiry        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shifts Shift[]
+}
+
+enum ShiftStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Shift {
+  id             String      @id @default(cuid())
+  orgId          String
+  org            Org         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  participantId  String
+  participant    Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  workerId       String
+  worker         Worker      @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  scheduledStart DateTime
+  scheduledEnd   DateTime
+  actualStart    DateTime?
+  actualEnd      DateTime?
+  status         ShiftStatus @default(SCHEDULED)
+  notes          String?     @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  incidents         Incident[]
+  progressNotes     ProgressNote[]
+  medicationRecords MedicationRecord[]
+}
+
+// Free-text shift notes written by the support worker during/after the shift.
+// Multiple per shift, timestamped. The end-of-shift "finalise notes" step
+// from Provider Scene C is just the final note in this list.
+model ProgressNote {
+  id        String   @id @default(cuid())
+  shiftId   String
+  shift     Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  authorId  String?
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([shiftId, createdAt])
+}
+
+// Medication Administration Record entries — one row per dose given. v1
+// keeps the model simple (medication name + optional dose + when given);
+// PRN tracking and refusal/missed-dose reason codes are deferred until
+// the client confirms how they want to handle them.
+model MedicationRecord {
+  id         String   @id @default(cuid())
+  shiftId    String
+  shift      Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  medication String
+  dose       String?
+  givenAt    DateTime
+  givenById  String?
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([shiftId, givenAt])
+}
+
+enum IncidentSeverity {
+  MINOR
+  MODERATE
+  SERIOUS
+  REPORTABLE
+}
+
+enum IncidentStatus {
+  DRAFT
+  REPORTED
+  UNDER_REVIEW
+  CLOSED
+}
+
+// 24-hour NDIS reportable-incident clock starts at reportedAt (when manager
+// is informed). reportedToNdisAt records the actual NDIS submission time
+// so we can flag breaches.
+model Incident {
+  id            String           @id @default(cuid())
+  orgId         String
+  org           Org              @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  participantId String?
+  participant   Participant?     @relation(fields: [participantId], references: [id])
+  shiftId       String?
+  shift         Shift?           @relation(fields: [shiftId], references: [id])
+  occurredAt    DateTime
+  reportedAt    DateTime?
+  severity      IncidentSeverity
+  status        IncidentStatus   @default(DRAFT)
+  description   String           @db.Text
+  immediateActions String?       @db.Text
+  reportedToNdisAt DateTime?
+  createdById   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
