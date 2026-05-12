@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { PhoneField } from "@/components/phone-field";
 
 import {
   createSCParticipantAction,
@@ -95,10 +96,8 @@ export default function NewSCParticipantPage() {
                 label="Email"
                 error={state.fieldErrors?.email}
               />
-              <Field
+              <PhoneField
                 name="phone"
-                type="tel"
-                label="Phone"
                 error={state.fieldErrors?.phone}
               />
             </div>

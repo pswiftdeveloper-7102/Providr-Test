@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { FormError } from "@/components/form-error";
+import { PhoneField } from "@/components/phone-field";
 import {
   CERT_LABEL,
   certStatus,
@@ -107,11 +108,9 @@ export function WorkerEditForm({ worker }: { worker: WorkerData }) {
                 defaultValue={worker.email ?? ""}
                 error={state.fieldErrors?.email}
               />
-              <Field
-                id="phone"
-                label="Phone"
-                type="tel"
-                defaultValue={worker.phone ?? ""}
+              <PhoneField
+                name="phone"
+                defaultValue={worker.phone}
                 error={state.fieldErrors?.phone}
               />
             </div>

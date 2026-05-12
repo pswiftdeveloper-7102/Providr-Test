@@ -24,6 +24,7 @@ import { Select, SelectContent, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { PhoneField } from "@/components/phone-field";
 
 import {
   addInformalSupportAction,
@@ -199,7 +200,7 @@ function InformalSupports({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="informal-phone">Phone</Label>
-                <Input id="informal-phone" name="phone" type="tel" />
+                <PhoneField name="phone" label="Phone" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="informal-email">Email</Label>
@@ -365,7 +366,7 @@ function ExternalContacts({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="external-phone">Phone</Label>
-                <Input id="external-phone" name="phone" type="tel" />
+                <PhoneField name="phone" label="Phone" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="external-email">Email</Label>

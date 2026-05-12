@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneField } from "@/components/phone-field";
 import {
   Select,
   SelectContent,
@@ -90,10 +91,8 @@ export default function NewWorkerPage() {
                 type="email"
                 error={state.fieldErrors?.email}
               />
-              <Field
-                id="phone"
-                label="Phone"
-                type="tel"
+              <PhoneField
+                name="phone"
                 error={state.fieldErrors?.phone}
               />
             </div>
