@@ -33,7 +33,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-import { ModuleTabs } from "@/components/module-tabs";
 import {
   ShiftsChart,
   type ShiftsChartDatum,
@@ -474,26 +473,23 @@ export default async function ProviderHome() {
             .
           </p>
         </div>
-        <div className="flex flex-col items-end gap-3">
-          <ModuleTabs portal="provider" />
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Today
-              </p>
-              <p className="text-sm font-medium">
-                {format(now, "EEEE, dd/MM/yyyy")}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              render={<Link href="/provider/audit-pack" />}
-            >
-              <Printer />
-              Audit pack
-            </Button>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Today
+            </p>
+            <p className="text-sm font-medium">
+              {format(now, "EEEE, dd/MM/yyyy")}
+            </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href="/provider/audit-pack" />}
+          >
+            <Printer />
+            Audit pack
+          </Button>
         </div>
       </header>
 

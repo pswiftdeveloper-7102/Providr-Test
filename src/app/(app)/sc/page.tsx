@@ -24,7 +24,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ModuleTabs } from "@/components/module-tabs";
 import {
   BudgetChart,
   type BudgetChartDatum,
@@ -231,26 +230,23 @@ export default async function SCHome() {
             .
           </p>
         </div>
-        <div className="flex flex-col items-end gap-3">
-          <ModuleTabs portal="sc" />
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Today
-              </p>
-              <p className="text-sm font-medium">
-                {format(now, "EEEE, dd/MM/yyyy")}
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              render={<Link href="/sc/participants/new" />}
-            >
-              <Plus />
-              New participant
-            </Button>
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">
+              Today
+            </p>
+            <p className="text-sm font-medium">
+              {format(now, "EEEE, dd/MM/yyyy")}
+            </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            render={<Link href="/sc/participants/new" />}
+          >
+            <Plus />
+            New participant
+          </Button>
         </div>
       </header>
 
