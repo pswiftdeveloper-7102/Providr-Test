@@ -60,7 +60,7 @@ export function ModuleTabs({ portal }: { portal: PortalKey }) {
     <div
       role="tablist"
       aria-label="Quick access"
-      className="inline-flex rounded-xl border bg-card p-1 shadow-sm"
+      className="inline-flex rounded-xl bg-muted p-1"
     >
       {tabs.map((tab, idx) => {
         const Icon = tab.icon;
@@ -81,8 +81,8 @@ export function ModuleTabs({ portal }: { portal: PortalKey }) {
             className={cn(
               "flex min-w-[120px] flex-col items-center gap-1 rounded-lg px-5 py-2 text-xs font-medium transition-colors",
               isActive
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Icon className="h-4 w-4" />

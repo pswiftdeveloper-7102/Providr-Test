@@ -34,6 +34,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import { ModuleTabs } from "@/components/module-tabs";
+import {
+  ShiftsChart,
+  type ShiftsChartDatum,
+} from "@/components/dashboard-charts/shifts-chart";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { getActiveRoles, isManager, ROLE_LABEL } from "@/lib/rbac";
@@ -149,6 +153,10 @@ export default async function ProviderHome() {
   const monthAgo = new Date(now);
   monthAgo.setDate(monthAgo.getDate() - 30);
 
+  // 14-day window for the shifts trend chart on the dashboard.
+  const chartStart = new Date(todayStart);
+  chartStart.setDate(chartStart.getDate() - 13);
+
   const activeRoles = getActiveRoles(context);
 
   const [
@@ -159,6 +167,7 @@ export default async function ProviderHome() {
     participantsLast30,
     workersLast30,
     incidentsLast30,
+    chartShifts,
     todayShifts,
     reportableIncidents,
     expiringWorkers,
@@ -184,6 +193,11 @@ export default async function ProviderHome() {
     }),
     db.incident.count({
       where: { orgId, reportedAt: { gte: monthAgo } },
+    }),
+    // Last 14 days of shifts for the dashboard trend chart.
+    db.shift.findMany({
+      where: { orgId, scheduledStart: { gte: chartStart } },
+      select: { scheduledStart: true, status: true },
     }),
     db.shift.findMany({
       where: {
@@ -260,6 +274,36 @@ export default async function ProviderHome() {
       },
     }),
   ]);
+
+  // Build the 14-day shifts trend dataset for the chart. Empty days
+  // still appear on the axis — `bucketByDay` initialises every day.
+  const bucketByDay = new Map<string, ShiftsChartDatum>();
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(chartStart);
+    d.setDate(d.getDate() + i);
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    bucketByDay.set(iso, {
+      date: iso,
+      label: d.toLocaleDateString("en-AU", {
+        weekday: "short",
+        day: "numeric",
+      }),
+      scheduled: 0,
+      completed: 0,
+      cancelled: 0,
+    });
+  }
+  for (const s of chartShifts) {
+    const d = s.scheduledStart;
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const bucket = bucketByDay.get(iso);
+    if (!bucket) continue;
+    if (s.status === "COMPLETED") bucket.completed += 1;
+    else if (s.status === "CANCELLED") bucket.cancelled += 1;
+    else bucket.scheduled += 1;
+  }
+  const shiftsChartData = Array.from(bucketByDay.values());
+  const shiftsChartTotal = chartShifts.length;
 
   // Derive the action items: only incidents still pending/overdue belong
   // in the "Action needed" bucket on the home dashboard.
@@ -430,27 +474,28 @@ export default async function ProviderHome() {
             .
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Today
-            </p>
-            <p className="text-sm font-medium">
-              {format(now, "EEEE, dd/MM/yyyy")}
-            </p>
+        <div className="flex flex-col items-end gap-3">
+          <ModuleTabs portal="provider" />
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Today
+              </p>
+              <p className="text-sm font-medium">
+                {format(now, "EEEE, dd/MM/yyyy")}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link href="/provider/audit-pack" />}
+            >
+              <Printer />
+              Audit pack
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href="/provider/audit-pack" />}
-          >
-            <Printer />
-            Audit pack
-          </Button>
         </div>
       </header>
-
-      <ModuleTabs portal="provider" />
 
       <section
         aria-labelledby="stats-heading"
@@ -513,6 +558,43 @@ export default async function ProviderHome() {
             </Card>
           );
         })}
+      </section>
+
+      <section aria-labelledby="chart-heading" className="space-y-3">
+        <h2 id="chart-heading" className="sr-only">
+          Shifts trend
+        </h2>
+        <Card>
+          <CardHeader className="border-b">
+            <div className="flex items-baseline justify-between gap-3">
+              <div>
+                <CardTitle>Shifts — last 14 days</CardTitle>
+                <CardDescription className="mt-1">
+                  {shiftsChartTotal} shift
+                  {shiftsChartTotal === 1 ? "" : "s"} scheduled across the
+                  window. Stacked by status.
+                </CardDescription>
+              </div>
+              <div className="hidden gap-3 text-[10px] uppercase tracking-wider text-muted-foreground sm:flex">
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm bg-primary" />
+                  Completed
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm bg-primary/40" />
+                  Scheduled
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-sm bg-destructive/70" />
+                  Cancelled
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <ShiftsChart data={shiftsChartData} />
+          </CardContent>
+        </Card>
       </section>
 
       {/* Today section — what's happening on the floor right now. */}

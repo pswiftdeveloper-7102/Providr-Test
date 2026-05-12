@@ -25,6 +25,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ModuleTabs } from "@/components/module-tabs";
+import {
+  BudgetChart,
+  type BudgetChartDatum,
+} from "@/components/dashboard-charts/budget-chart";
 import { db } from "@/lib/db";
 import { formatCents } from "@/lib/utils";
 import { resolvePortalContext } from "@/lib/session";
@@ -133,6 +137,29 @@ export default async function SCHome() {
   }
   hot.sort((a, b) => b.pct - a.pct);
 
+  // Top 5 active plans by total funding for the dashboard chart.
+  // Show utilisation per bucket as percent so they're directly comparable.
+  const chartPlans = [...hotBudgets]
+    .sort((a, b) => b.totalCents - a.totalCents)
+    .slice(0, 5);
+  const budgetChartData: BudgetChartDatum[] = chartPlans.map((p) => {
+    const core = p.budgets.find((b) => b.category === "CORE");
+    const capacity = p.budgets.find((b) => b.category === "CAPACITY");
+    const capital = p.budgets.find((b) => b.category === "CAPITAL");
+    const pct = (
+      b: typeof p.budgets[number] | undefined
+    ): number => {
+      if (!b || b.totalCents === 0) return 0;
+      return Math.min(100, (b.spentCents / b.totalCents) * 100);
+    };
+    return {
+      participant: `${p.participant.firstName} ${p.participant.lastName.charAt(0)}.`,
+      Core: pct(core),
+      Capacity: pct(capacity),
+      Capital: pct(capital),
+    };
+  });
+
   type Delta = {
     value: number;
     direction: "up" | "down" | "flat";
@@ -204,27 +231,28 @@ export default async function SCHome() {
             .
           </p>
         </div>
-        <div className="flex flex-col items-end gap-2">
-          <div className="text-right">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Today
-            </p>
-            <p className="text-sm font-medium">
-              {format(now, "EEEE, dd/MM/yyyy")}
-            </p>
+        <div className="flex flex-col items-end gap-3">
+          <ModuleTabs portal="sc" />
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Today
+              </p>
+              <p className="text-sm font-medium">
+                {format(now, "EEEE, dd/MM/yyyy")}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link href="/sc/participants/new" />}
+            >
+              <Plus />
+              New participant
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href="/sc/participants/new" />}
-          >
-            <Plus />
-            New participant
-          </Button>
         </div>
       </header>
-
-      <ModuleTabs portal="sc" />
 
       <Alert>
         <AlertTriangle />
@@ -303,6 +331,44 @@ export default async function SCHome() {
           );
         })}
       </section>
+
+      {budgetChartData.length > 0 && (
+        <section aria-labelledby="budget-chart-heading" className="space-y-3">
+          <h2 id="budget-chart-heading" className="sr-only">
+            Budget utilisation
+          </h2>
+          <Card>
+            <CardHeader className="border-b">
+              <div className="flex items-baseline justify-between gap-3">
+                <div>
+                  <CardTitle>Budget utilisation</CardTitle>
+                  <CardDescription className="mt-1">
+                    Top {budgetChartData.length} active plans by total funding —
+                    percent spent per bucket.
+                  </CardDescription>
+                </div>
+                <div className="hidden gap-3 text-[10px] uppercase tracking-wider text-muted-foreground sm:flex">
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-sm bg-primary" />
+                    Core
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-sm bg-primary/55" />
+                    Capacity
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-sm bg-primary/25" />
+                    Capital
+                  </span>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <BudgetChart data={budgetChartData} />
+            </CardContent>
+          </Card>
+        </section>
+      )}
 
       <section aria-labelledby="six-jobs-heading">
         <div className="mb-4 flex items-baseline justify-between">
