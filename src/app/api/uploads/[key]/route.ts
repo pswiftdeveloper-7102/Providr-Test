@@ -6,8 +6,8 @@ import { contentTypeFromKey, readUpload } from "@/lib/uploads";
 
 // Streams an uploaded file by storage key. Access control:
 //   1. User must be authenticated.
-//   2. The file must be referenced from a ServiceAgreement attached to a
-//      participant in an org the user is a member of.
+//   2. The file must be referenced from a record (ServiceAgreement or
+//      Plan) whose org the user is a member of.
 //
 // Anyone outside that chain gets a 404 (deliberately — we don't leak
 // "exists but you can't see it" vs "doesn't exist").
@@ -23,29 +23,53 @@ export async function GET(
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
-  const agreement = await db.serviceAgreement.findFirst({
-    where: { uploadedFileKey: key },
-    select: {
-      uploadedFileName: true,
-      participant: {
-        select: {
-          org: {
-            select: {
-              memberships: {
-                where: { userId: session.user.id },
-                select: { id: true },
+  // Look the file up against any of the upload-bearing models. Each
+  // result includes the org membership filtered to this user — empty
+  // arrays mean "no, you can't read this".
+  const [agreement, plan] = await Promise.all([
+    db.serviceAgreement.findFirst({
+      where: { uploadedFileKey: key },
+      select: {
+        uploadedFileName: true,
+        participant: {
+          select: {
+            org: {
+              select: {
+                memberships: {
+                  where: { userId: session.user.id },
+                  select: { id: true },
+                },
               },
             },
           },
         },
       },
-    },
-  });
+    }),
+    db.plan.findFirst({
+      where: { planFileKey: key },
+      select: {
+        planFileName: true,
+        participant: {
+          select: {
+            org: {
+              select: {
+                memberships: {
+                  where: { userId: session.user.id },
+                  select: { id: true },
+                },
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
 
-  if (
-    !agreement ||
-    agreement.participant.org.memberships.length === 0
-  ) {
+  const agreementOk =
+    agreement && agreement.participant.org.memberships.length > 0;
+  const planOk = plan && plan.participant.org.memberships.length > 0;
+
+  if (!agreementOk && !planOk) {
     return new NextResponse("Not found", { status: 404 });
   }
 
@@ -56,7 +80,9 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const displayName = agreement.uploadedFileName ?? key;
+  const displayName = agreementOk
+    ? agreement.uploadedFileName ?? key
+    : plan?.planFileName ?? key;
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": contentTypeFromKey(key),

@@ -16,6 +16,11 @@ const planSchema = z.object({
   coreDollars: z.string(),
   capacityDollars: z.string(),
   capitalDollars: z.string(),
+  // Q5 (2026-05-12): when the plan was created via the "Import from PDF"
+  // flow these point at the upload that's already been saved through
+  // /api/uploads. The create action attaches them to the new Plan.
+  planFileKey: z.string().trim().optional().or(z.literal("")),
+  planFileName: z.string().trim().optional().or(z.literal("")),
 });
 
 export type CreatePlanState = {
@@ -47,6 +52,8 @@ export async function createPlanAction(
     coreDollars: formData.get("coreDollars") ?? "0",
     capacityDollars: formData.get("capacityDollars") ?? "0",
     capitalDollars: formData.get("capitalDollars") ?? "0",
+    planFileKey: formData.get("planFileKey") ?? "",
+    planFileName: formData.get("planFileName") ?? "",
   });
 
   if (!parsed.success) {
@@ -86,6 +93,8 @@ export async function createPlanAction(
       endDate: end,
       totalCents,
       status: "ACTIVE",
+      planFileKey: parsed.data.planFileKey || null,
+      planFileName: parsed.data.planFileName || null,
       budgets: {
         create: [
           { category: "CORE", totalCents: coreCents },

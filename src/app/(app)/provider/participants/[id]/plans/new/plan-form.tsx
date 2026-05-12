@@ -22,20 +22,49 @@ import { createPlanAction, type CreatePlanState } from "./actions";
 
 const initialState: CreatePlanState = {};
 
+export type PlanFormPrefill = {
+  ndisPlanNumber: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  coreDollars: number | null;
+  capacityDollars: number | null;
+  capitalDollars: number | null;
+};
+
 type Props = {
   participantId: string;
   cancelHref: string;
+  prefill?: PlanFormPrefill;
+  planFileKey?: string | null;
+  planFileName?: string | null;
 };
 
-export function PlanForm({ participantId, cancelHref }: Props) {
+function toMoneyStr(v: number | null | undefined): string {
+  if (v == null || Number.isNaN(v)) return "";
+  return String(v);
+}
+
+export function PlanForm({
+  participantId,
+  cancelHref,
+  prefill,
+  planFileKey,
+  planFileName,
+}: Props) {
   const [state, formAction, pending] = useActionState(
     createPlanAction.bind(null, participantId),
     initialState
   );
 
-  const [coreDollars, setCoreDollars] = useState("");
-  const [capacityDollars, setCapacityDollars] = useState("");
-  const [capitalDollars, setCapitalDollars] = useState("");
+  const [coreDollars, setCoreDollars] = useState(
+    toMoneyStr(prefill?.coreDollars)
+  );
+  const [capacityDollars, setCapacityDollars] = useState(
+    toMoneyStr(prefill?.capacityDollars)
+  );
+  const [capitalDollars, setCapitalDollars] = useState(
+    toMoneyStr(prefill?.capitalDollars)
+  );
 
   const totalCents =
     dollarsToCents(coreDollars) +
@@ -44,6 +73,16 @@ export function PlanForm({ participantId, cancelHref }: Props) {
 
   return (
     <form action={formAction} className="space-y-6">
+      {planFileKey && (
+        <>
+          <input type="hidden" name="planFileKey" value={planFileKey} />
+          <input
+            type="hidden"
+            name="planFileName"
+            value={planFileName ?? ""}
+          />
+        </>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Plan dates</CardTitle>
@@ -59,6 +98,7 @@ export function PlanForm({ participantId, cancelHref }: Props) {
               id="ndisPlanNumber"
               name="ndisPlanNumber"
               placeholder="e.g. PLAN-2026-AB123"
+              defaultValue={prefill?.ndisPlanNumber ?? ""}
               aria-invalid={!!state.fieldErrors?.ndisPlanNumber}
             />
             {state.fieldErrors?.ndisPlanNumber && (
@@ -69,8 +109,20 @@ export function PlanForm({ participantId, cancelHref }: Props) {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <DateField name="startDate" label="Start date" required error={state.fieldErrors?.startDate} />
-            <DateField name="endDate" label="End date" required error={state.fieldErrors?.endDate} />
+            <DateField
+              name="startDate"
+              label="Start date"
+              required
+              defaultValue={prefill?.startDate ?? undefined}
+              error={state.fieldErrors?.startDate}
+            />
+            <DateField
+              name="endDate"
+              label="End date"
+              required
+              defaultValue={prefill?.endDate ?? undefined}
+              error={state.fieldErrors?.endDate}
+            />
           </div>
         </CardContent>
       </Card>
