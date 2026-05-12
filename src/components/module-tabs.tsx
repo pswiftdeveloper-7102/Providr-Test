@@ -62,9 +62,16 @@ export function ModuleTabs({ portal }: { portal: PortalKey }) {
       aria-label="Quick access"
       className="inline-flex rounded-xl border bg-card p-1 shadow-sm"
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, idx) => {
         const Icon = tab.icon;
-        const isActive = tab.match.some((m) => pathname.startsWith(m));
+        const matched = tab.match.some((m) => pathname.startsWith(m));
+        const nothingMatches = tabs.every(
+          (t) => !t.match.some((m) => pathname.startsWith(m))
+        );
+        // When nothing matches (e.g. on the dashboard URL itself), the
+        // first tab is shown as the default selection so the toggle
+        // never looks unselected.
+        const isActive = matched || (nothingMatches && idx === 0);
         return (
           <Link
             key={tab.key}

@@ -5,7 +5,10 @@ import {
   Building2,
   ClipboardCheck,
   FileText,
+  type LucideIcon,
   Plus,
+  TrendingDown,
+  TrendingUp,
   Users,
   Wallet,
 } from "lucide-react";
@@ -37,11 +40,16 @@ export default async function SCHome() {
   const horizon = new Date(now);
   horizon.setDate(horizon.getDate() + REVIEW_HORIZON_DAYS);
 
+  const monthAgo = new Date(now);
+  monthAgo.setDate(monthAgo.getDate() - 30);
+
   const [
     participantCount,
     providerCount,
     openEscalations,
     plansEndingSoon,
+    participantsLast30,
+    escalationsLast30,
     hotBudgets,
     recentEscalations,
   ] = await Promise.all([
@@ -56,6 +64,12 @@ export default async function SCHome() {
         status: { in: ["ACTIVE", "DRAFT"] },
         endDate: { lte: horizon },
       },
+    }),
+    db.participant.count({
+      where: { orgId, createdAt: { gte: monthAgo } },
+    }),
+    db.escalation.count({
+      where: { orgId, openedAt: { gte: monthAgo } },
     }),
     // Plans where ANY bucket is >80% spent.
     db.plan.findMany({
@@ -119,26 +133,59 @@ export default async function SCHome() {
   }
   hot.sort((a, b) => b.pct - a.pct);
 
-  const stats = [
+  type Delta = {
+    value: number;
+    direction: "up" | "down" | "flat";
+    suffix: string;
+  } | null;
+  type StatCard = {
+    label: string;
+    value: number;
+    href: string;
+    icon: LucideIcon;
+    accent: "default" | "danger";
+    delta: Delta;
+  };
+  const stats: StatCard[] = [
     {
       label: "Participants",
       value: participantCount,
       href: "/sc/participants",
+      icon: Users,
+      accent: "default",
+      delta: participantsLast30
+        ? { value: participantsLast30, direction: "up", suffix: "this month" }
+        : null,
     },
     {
       label: "Providers in network",
       value: providerCount,
       href: "/sc/providers",
+      icon: Building2,
+      accent: "default",
+      delta: null,
     },
     {
       label: "Open escalations",
       value: openEscalations,
       href: "/sc/escalations",
+      icon: AlertTriangle,
+      accent: openEscalations > 0 ? "danger" : "default",
+      delta: escalationsLast30
+        ? {
+            value: escalationsLast30,
+            direction: escalationsLast30 > openEscalations ? "down" : "up",
+            suffix: "this month",
+          }
+        : null,
     },
     {
       label: "Plans ending in 90 days",
       value: plansEndingSoon,
       href: "/sc/reviews",
+      icon: ClipboardCheck,
+      accent: "default",
+      delta: null,
     },
   ];
 
@@ -196,20 +243,65 @@ export default async function SCHome() {
         <h2 id="stats-heading" className="sr-only">
           At a glance
         </h2>
-        {stats.map((stat) => (
-          <Link key={stat.label} href={stat.href}>
-            <Card size="sm" className="transition-colors hover:bg-muted/40">
-              <CardContent>
-                <div className="text-3xl font-semibold tracking-tight">
-                  {stat.value}
-                </div>
-                <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
-                  {stat.label}
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          const isDanger = stat.accent === "danger";
+          return (
+            <Link key={stat.label} href={stat.href}>
+              <Card
+                size="sm"
+                className="overflow-hidden transition-colors hover:bg-muted/40"
+              >
+                <CardContent>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      {stat.label}
+                    </div>
+                    <div
+                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                        isDanger
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-primary/10 text-primary"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                  </div>
+                  <div className="mt-2 text-3xl font-semibold tracking-tight">
+                    {stat.value}
+                  </div>
+                  {stat.delta ? (
+                    <div className="mt-1 flex items-center gap-1 text-xs">
+                      {stat.delta.direction === "up" && (
+                        <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                      )}
+                      {stat.delta.direction === "down" && (
+                        <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                      )}
+                      <span
+                        className={
+                          stat.delta.direction === "up"
+                            ? "font-medium text-emerald-700"
+                            : stat.delta.direction === "down"
+                            ? "font-medium text-destructive"
+                            : "font-medium text-muted-foreground"
+                        }
+                      >
+                        {stat.delta.direction === "up" ? "+" : ""}
+                        {stat.delta.value}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {stat.delta.suffix}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="mt-1 h-4" />
+                  )}
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </section>
 
       <section aria-labelledby="six-jobs-heading">
