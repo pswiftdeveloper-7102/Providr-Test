@@ -17,7 +17,9 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
-      lang="en"
+      // en-AU — drives Chrome/Edge to render dd/mm/yyyy in native date
+      // input placeholders instead of mm/dd/yyyy.
+      lang="en-AU"
       suppressHydrationWarning
       className={cn("h-full antialiased font-sans", geist.variable)}
     >
