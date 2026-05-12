@@ -7,7 +7,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { assertManager } from "@/lib/rbac";
-import { saveUpload } from "@/lib/uploads";
+import { saveBuffer, saveUpload } from "@/lib/uploads";
+import { renderServiceAgreementPdf } from "@/lib/pdf/service-agreement-pdf";
 
 const createAgreementSchema = z.object({
   startDate: z.string().min(1, "Start date is required."),
@@ -35,10 +36,19 @@ export async function createAgreementAction(
   const context = await resolvePortalContext("provider");
   assertManager(context);
 
-  // Confirm participant belongs to the active org.
+  // Confirm participant belongs to the active org. Pull the fields the PDF
+  // generator needs at the same time so we don't refetch later.
   const participant = await db.participant.findFirst({
     where: { id: participantId, orgId: context.activeOrg.id },
-    select: { id: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      ndisNumber: true,
+      address: true,
+      dateOfBirth: true,
+      pronouns: true,
+    },
   });
   if (!participant) {
     return { error: "Participant not found." };
@@ -88,6 +98,53 @@ export async function createAgreementAction(
             err instanceof Error ? err.message : "Upload failed.",
         },
       };
+    }
+  }
+
+  // Q7 (2026-05-12): if the admin hasn't uploaded a signed copy AND hasn't
+  // pasted an external link, auto-generate the agreement PDF from
+  // participant + org metadata + the notes/services field. The generated
+  // file lives in the same /api/uploads pipeline so the download UI works
+  // without changes.
+  const orgRecord = await db.org.findUnique({
+    where: { id: context.activeOrg.id },
+    select: {
+      legalName: true,
+      tradingName: true,
+      abn: true,
+      ndisRegistrationNumber: true,
+    },
+  });
+  const shouldGenerate =
+    !uploadedFileKey && !(data.documentUrl && data.documentUrl.length > 0);
+  if (shouldGenerate && orgRecord) {
+    try {
+      const pdfBuffer = await renderServiceAgreementPdf({
+        org: orgRecord,
+        participant: {
+          firstName: participant.firstName,
+          lastName: participant.lastName,
+          ndisNumber: participant.ndisNumber,
+          address: participant.address,
+          dateOfBirth: participant.dateOfBirth,
+          pronouns: participant.pronouns,
+        },
+        agreement: {
+          startDate: start,
+          endDate: end,
+          signedAt: signed,
+          notes: data.notes || null,
+        },
+        generatedAt: new Date(),
+      });
+      const fileName = `service-agreement-${participant.lastName.toLowerCase()}-${start.toISOString().slice(0, 10)}.pdf`;
+      const saved = await saveBuffer(pdfBuffer, fileName, "application/pdf");
+      uploadedFileKey = saved.key;
+      uploadedFileName = saved.name;
+    } catch (err) {
+      // Don't block agreement creation if PDF generation fails — surface
+      // the issue but let the record save so manual upload still works.
+      console.error("Service agreement PDF generation failed", err);
     }
   }
 

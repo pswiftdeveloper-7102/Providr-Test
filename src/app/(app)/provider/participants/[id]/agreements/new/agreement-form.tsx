@@ -44,7 +44,10 @@ export function AgreementForm({
           <CardTitle>Agreement details</CardTitle>
           <CardDescription>
             Most NDIS service agreements run for the length of the plan year.
-            Leave the signed date empty to file as Draft.
+            Leave the signed date empty to file as Draft. If you don&apos;t
+            upload a signed copy or paste an external link, we&apos;ll
+            generate the PDF from your org and participant details — then
+            you can download it, sign it, and re-upload.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -102,13 +105,17 @@ export function AgreementForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <Label htmlFor="notes">Services agreed & notes</Label>
             <Textarea
               id="notes"
               name="notes"
-              rows={3}
-              placeholder="Anything unusual — agreed exclusions, special terms…"
+              rows={4}
+              placeholder="Describe the supports you'll deliver — scope, weekly hours, support categories, any agreed exclusions or special terms. This goes into the generated PDF under Services agreed."
             />
+            <p className="text-xs text-muted-foreground">
+              This appears as the &quot;Services agreed&quot; section of the
+              auto-generated agreement PDF.
+            </p>
           </div>
 
           <FormError message={state.error} />

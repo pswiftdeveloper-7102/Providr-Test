@@ -31,6 +31,28 @@ function sanitiseExtension(filename: string): string {
   return ".bin";
 }
 
+// Used by the server-side PDF generator (service agreement etc.) where we
+// have a Buffer in memory rather than a multipart-uploaded File.
+export async function saveBuffer(
+  buffer: Buffer,
+  name: string,
+  mimeType: string
+): Promise<UploadResult> {
+  if (buffer.byteLength > MAX_UPLOAD_BYTES) {
+    throw new Error(
+      `File too large. Max ${Math.floor(MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`
+    );
+  }
+  if (!ALLOWED_MIME.has(mimeType)) {
+    throw new Error("Unsupported file type for generated upload.");
+  }
+  await ensureDir();
+  const ext = sanitiseExtension(name);
+  const key = `${randomUUID()}${ext}`;
+  await writeFile(path.join(UPLOADS_DIR, key), buffer);
+  return { key, name, mimeType };
+}
+
 export async function saveUpload(file: File): Promise<UploadResult> {
   if (file.size > MAX_UPLOAD_BYTES) {
     throw new Error(

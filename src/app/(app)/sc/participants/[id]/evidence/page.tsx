@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   Building2,
   ClipboardCheck,
+  Download,
   FileText,
   Wallet,
 } from "lucide-react";
@@ -114,6 +115,20 @@ export default async function ParticipantEvidencePage({
               View original plan PDF
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            render={
+              <a
+                href={`/api/sc/participants/${participant.id}/funding-justification`}
+                target="_blank"
+                rel="noopener noreferrer"
+              />
+            }
+          >
+            <Download />
+            Funding justification PDF
+          </Button>
           <PrintButton />
         </div>
       </div>
