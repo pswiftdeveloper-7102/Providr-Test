@@ -90,7 +90,7 @@ export default async function ShiftDetailPage({
   if (!shift) notFound();
 
   const restraints = await db.restraintRecord.findMany({
-    where: { shiftId: shift.id },
+    where: { shiftId: shift.id, orgId: context.activeOrg.id },
     orderBy: { usedAt: "desc" },
   });
 

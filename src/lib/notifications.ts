@@ -24,9 +24,25 @@ export type Notification = {
   urgent?: boolean;
 };
 
-const CERT_WARN_DAYS = 30;
+// Q2 (2026-05-12): tiered cert warnings. 60d = first heads-up, 30d =
+// escalated, 7d = urgent. The query window is the widest band; per-cert
+// tiering happens below when building notification rows.
+const CERT_WARN_DAYS = 60;
+const CERT_TIER_NUDGE = 60;
+const CERT_TIER_ESCALATED = 30;
+const CERT_TIER_URGENT = 7;
 const PLAN_REVIEW_DAYS = 60;
 const BUDGET_HOT = 0.9;
+
+function certTier(
+  daysUntilExpiry: number
+): "expired" | "urgent" | "escalated" | "nudge" | null {
+  if (daysUntilExpiry < 0) return "expired";
+  if (daysUntilExpiry <= CERT_TIER_URGENT) return "urgent";
+  if (daysUntilExpiry <= CERT_TIER_ESCALATED) return "escalated";
+  if (daysUntilExpiry <= CERT_TIER_NUDGE) return "nudge";
+  return null;
+}
 
 export async function getNotifications(
   context: ResolvedPortalContext
@@ -154,32 +170,53 @@ async function getProviderNotifications(
     const firstAidDays = w.firstAidExpiry
       ? differenceInCalendarDays(w.firstAidExpiry, now)
       : null;
+
+    const ndisTier = ndisDays !== null ? certTier(ndisDays) : null;
+    const firstAidTier = firstAidDays !== null ? certTier(firstAidDays) : null;
+    // Skip workers that are inside the query window (≤60d) but only on
+    // one cert that's still >60d on the other — nothing to surface.
+    if (!ndisTier && !firstAidTier) continue;
+
     const pieces: string[] = [];
-    let urgent = false;
-    if (ndisDays !== null) {
+    if (ndisDays !== null && ndisTier) {
       pieces.push(
         ndisDays < 0
           ? `NDIS check expired ${Math.abs(ndisDays)}d ago`
           : `NDIS check in ${ndisDays}d`
       );
-      if (ndisDays < 7) urgent = true;
     }
-    if (firstAidDays !== null) {
+    if (firstAidDays !== null && firstAidTier) {
       pieces.push(
         firstAidDays < 0
           ? `First Aid expired ${Math.abs(firstAidDays)}d ago`
           : `First Aid in ${firstAidDays}d`
       );
-      if (firstAidDays < 7) urgent = true;
     }
+
+    // Worst tier across both certs drives the row's severity.
+    const tiers = [ndisTier, firstAidTier].filter(Boolean) as Array<
+      "expired" | "urgent" | "escalated" | "nudge"
+    >;
+    const rank = { expired: 4, urgent: 3, escalated: 2, nudge: 1 } as const;
+    const worst = tiers.reduce((a, b) => (rank[a] >= rank[b] ? a : b));
+
+    const titleSuffix =
+      worst === "expired"
+        ? "cert expired"
+        : worst === "urgent"
+        ? "cert expires this week"
+        : worst === "escalated"
+        ? "cert expires within 30 days"
+        : "cert expires within 60 days";
+
     out.push({
       id: `cert-${w.id}`,
-      title: `${w.firstName} ${w.lastName} — certs`,
+      title: `${w.firstName} ${w.lastName} — ${titleSuffix}`,
       body: pieces.join(" · "),
       time: "",
       href: `/provider/workers/${w.id}`,
-      unread: urgent,
-      urgent,
+      unread: worst === "expired" || worst === "urgent" || worst === "escalated",
+      urgent: worst === "expired" || worst === "urgent",
     });
   }
 

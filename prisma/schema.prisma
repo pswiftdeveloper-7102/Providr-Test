@@ -445,6 +445,21 @@ model Shift {
   status         ShiftStatus @default(SCHEDULED)
   notes          String?     @db.Text
 
+  // Q1 (2026-05-12): when a hybrid (SC+Provider) org rosters a shift
+  // for a participant their own SC team also coordinates, NDIS requires
+  // disclosure of the conflict — not prevention. We capture that the
+  // admin acknowledged the conflict on the participant's behalf.
+  coiAcknowledged   Boolean   @default(false)
+  coiAcknowledgedAt DateTime?
+  coiAcknowledgedBy String? // User.id of the admin who created the shift
+
+  // Q2 (2026-05-12): expired NDIS Worker Check is a soft block — the
+  // admin can proceed by typing an override reason. Both the reason and
+  // the timestamp are kept against the shift for audit.
+  expiredCheckOverride   String?   @db.Text
+  expiredCheckOverrideAt DateTime?
+  expiredCheckOverrideBy String? // User.id of the admin who overrode
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

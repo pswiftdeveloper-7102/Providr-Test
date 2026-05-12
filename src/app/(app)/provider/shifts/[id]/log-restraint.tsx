@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   BrandedSelectItem,
@@ -133,6 +136,32 @@ export function LogRestraintForm({ shiftId }: { shiftId: string }) {
       </div>
 
       <FormError message={state.error} />
+
+      {state.autoIncidentId && (
+        <Alert>
+          <AlertTriangle />
+          <AlertTitle>
+            Reportable incident auto-flagged
+          </AlertTitle>
+          <AlertDescription className="space-y-2">
+            No active Behaviour Support Plan was found for this
+            participant — restrictive practice without an authorised BSP
+            is itself a reportable incident under NDIS Commission rules.
+            We&apos;ve created a draft for you. Either file it with NDIS
+            or update the BSP to authorise this retroactively.
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2"
+              render={
+                <Link href={`/provider/incidents/${state.autoIncidentId}`} />
+              }
+            >
+              Open the auto-flagged incident
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={pending}>

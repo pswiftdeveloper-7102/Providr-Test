@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
+import { AlertTriangle, ShieldAlert } from "lucide-react";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
 import { DateField } from "@/components/date-field";
 import { CERT_LABEL, type CertStatus } from "@/lib/certificates";
@@ -33,12 +37,14 @@ type WorkerOption = {
   name: string;
   ndisStatus: CertStatus;
   firstAidStatus: CertStatus;
+  ndisExpiry: string | null;
 };
 
 type ParticipantOption = {
   id: string;
   name: string;
   pronouns: string | null;
+  coiApplies: boolean;
 };
 
 type Props = {
@@ -48,6 +54,16 @@ type Props = {
 
 const initialState: CreateShiftState = {};
 
+function formatExpiryDate(iso: string | null): string {
+  if (!iso) return "an unknown date";
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export function NewShiftForm({ workers, participants }: Props) {
   const [state, formAction, pending] = useActionState(
     createShiftAction,
@@ -56,12 +72,15 @@ export function NewShiftForm({ workers, participants }: Props) {
 
   const [workerId, setWorkerId] = useState("");
   const [participantId, setParticipantId] = useState("");
+  const [coiAcknowledged, setCoiAcknowledged] = useState(false);
 
   const selectedWorker = workers.find((w) => w.id === workerId);
   const ndisExpired = selectedWorker?.ndisStatus === "expired";
   const ndisExpiring = selectedWorker?.ndisStatus === "expiring";
 
-  // Default to today's date for the date input.
+  const selectedParticipant = participants.find((p) => p.id === participantId);
+  const coiApplies = !!selectedParticipant?.coiApplies;
+
   const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
@@ -99,11 +118,7 @@ export function NewShiftForm({ workers, participants }: Props) {
                   </div>
                 ) : (
                   workers.map((w) => (
-                    <SelectItem
-                      key={w.id}
-                      value={w.id}
-                      disabled={w.ndisStatus === "expired"}
-                    >
+                    <SelectItem key={w.id} value={w.id}>
                       <div className="flex flex-1 items-center justify-between gap-3">
                         <span>{w.name}</span>
                         <CertChip status={w.ndisStatus} />
@@ -118,12 +133,6 @@ export function NewShiftForm({ workers, participants }: Props) {
                 {state.fieldErrors.workerId}
               </p>
             )}
-            {selectedWorker && ndisExpired && (
-              <p className="text-xs text-destructive">
-                NDIS Worker Check is expired — this worker can&apos;t be
-                rostered until the check is renewed.
-              </p>
-            )}
             {selectedWorker && ndisExpiring && (
               <p className="text-xs text-amber-700">
                 NDIS Worker Check is expiring soon. Renew before the next
@@ -131,6 +140,44 @@ export function NewShiftForm({ workers, participants }: Props) {
               </p>
             )}
           </div>
+
+          {selectedWorker && ndisExpired && (
+            <Alert variant="destructive">
+              <ShieldAlert />
+              <AlertTitle>
+                NDIS Worker Screening Check expired on{" "}
+                {formatExpiryDate(selectedWorker.ndisExpiry)}
+              </AlertTitle>
+              <AlertDescription className="space-y-2">
+                <p>
+                  Proceeding without a current check is a compliance breach.
+                  If you have a documented reason to continue (e.g. renewal
+                  in progress, urgent care need), record it below — this
+                  becomes part of the shift&apos;s audit trail.
+                </p>
+                <div className="space-y-1">
+                  <Label htmlFor="expiredCheckOverride" className="text-xs">
+                    Reason to proceed
+                    <span className="ml-0.5 text-destructive">*</span>
+                  </Label>
+                  <Textarea
+                    id="expiredCheckOverride"
+                    name="expiredCheckOverride"
+                    rows={2}
+                    placeholder="e.g. Renewal lodged 10/05/2026, awaiting clearance. Continuity of care for participant essential."
+                    aria-invalid={
+                      !!state.fieldErrors?.expiredCheckOverride
+                    }
+                  />
+                  {state.fieldErrors?.expiredCheckOverride && (
+                    <p className="text-xs text-destructive">
+                      {state.fieldErrors.expiredCheckOverride}
+                    </p>
+                  )}
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="participantId">
@@ -147,7 +194,7 @@ export function NewShiftForm({ workers, participants }: Props) {
                 aria-invalid={!!state.fieldErrors?.participantId}
               >
                 <SelectValue placeholder="Pick a participant">
-                  {participants.find((p) => p.id === participantId)?.name}
+                  {selectedParticipant?.name}
                 </SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -160,11 +207,21 @@ export function NewShiftForm({ workers, participants }: Props) {
                     <SelectItem key={p.id} value={p.id}>
                       <div className="flex flex-1 items-center justify-between gap-3">
                         <span>{p.name}</span>
-                        {p.pronouns && (
-                          <span className="text-xs text-muted-foreground">
-                            {p.pronouns}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {p.coiApplies && (
+                            <Badge
+                              variant="outline"
+                              className="border-amber-300 bg-amber-50 text-amber-900"
+                            >
+                              CoI
+                            </Badge>
+                          )}
+                          {p.pronouns && (
+                            <span className="text-xs text-muted-foreground">
+                              {p.pronouns}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </SelectItem>
                   ))
@@ -177,6 +234,41 @@ export function NewShiftForm({ workers, participants }: Props) {
               </p>
             )}
           </div>
+
+          {coiApplies && (
+            <Alert>
+              <AlertTriangle />
+              <AlertTitle>Conflict of interest disclosure required</AlertTitle>
+              <AlertDescription className="space-y-3">
+                <p>
+                  This organisation also provides Support Coordination to{" "}
+                  {selectedParticipant?.name}. Under the NDIS Code of Conduct,
+                  the participant must be informed when the same organisation
+                  both coordinates and delivers their care, and offered
+                  alternative providers.
+                </p>
+                <label className="flex items-start gap-2 text-sm">
+                  <Checkbox
+                    name="coiAcknowledged"
+                    value="on"
+                    checked={coiAcknowledged}
+                    onCheckedChange={(v) => setCoiAcknowledged(!!v)}
+                    aria-invalid={!!state.fieldErrors?.coiAcknowledged}
+                  />
+                  <span>
+                    I confirm the participant has been told this org both
+                    coordinates and delivers their care, has been offered
+                    alternatives, and has agreed to this shift.
+                  </span>
+                </label>
+                {state.fieldErrors?.coiAcknowledged && (
+                  <p className="text-xs text-destructive">
+                    {state.fieldErrors.coiAcknowledged}
+                  </p>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
 
           <Separator />
 
@@ -227,7 +319,7 @@ export function NewShiftForm({ workers, participants }: Props) {
             <Button variant="ghost" render={<Link href="/provider/roster" />}>
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || ndisExpired}>
+            <Button type="submit" disabled={pending}>
               {pending ? "Creating…" : "Create shift"}
             </Button>
           </div>

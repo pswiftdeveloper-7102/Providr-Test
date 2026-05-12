@@ -316,6 +316,12 @@ export type LogRestraintState = {
     Record<"type" | "usedAt" | "durationMinutes" | "reason" | "outcome", string>
   >;
   ok?: boolean;
+  /**
+   * Populated when there was no active BSP at the time of the restraint
+   * — the system auto-created a reportable incident (Q3 from the
+   * 2026-05-12 client batch). The UI surfaces a follow-up CTA.
+   */
+  autoIncidentId?: string;
 };
 
 export async function logRestraintAction(
@@ -362,24 +368,65 @@ export async function logRestraintAction(
     : null;
 
   const session = await auth();
-  await db.restraintRecord.create({
-    data: {
-      orgId: context.activeOrg.id,
-      participantId: shift.participantId,
-      shiftId: shift.id,
-      type: parsed.data.type,
-      usedAt,
-      durationMinutes:
-        duration !== null && !Number.isNaN(duration) ? duration : null,
-      reason: parsed.data.reason,
-      outcome: parsed.data.outcome || null,
-      createdById: session?.user?.id ?? null,
-      authorisedById: session?.user?.id ?? null,
-      bspIdAtTime: activeBSP?.id ?? null,
-    },
+
+  // Q3 (2026-05-12): a restrictive practice without an authorised BSP is
+  // already a reportable incident under NDIS Commission rules. Detect it,
+  // create the Incident record, and start the statutory countdown so the
+  // provider can respond. We do NOT auto-file with the Commission —
+  // filing is a human decision; the admin can either file the report or
+  // update the BSP to authorise the restraint retroactively if
+  // clinically appropriate.
+  const autoIncidentNeeded = !activeBSP;
+
+  let autoIncidentId: string | null = null;
+  await db.$transaction(async (tx) => {
+    const restraint = await tx.restraintRecord.create({
+      data: {
+        orgId: context.activeOrg.id,
+        participantId: shift.participantId,
+        shiftId: shift.id,
+        type: parsed.data.type,
+        usedAt,
+        durationMinutes:
+          duration !== null && !Number.isNaN(duration) ? duration : null,
+        reason: parsed.data.reason,
+        outcome: parsed.data.outcome || null,
+        createdById: session?.user?.id ?? null,
+        authorisedById: session?.user?.id ?? null,
+        bspIdAtTime: activeBSP?.id ?? null,
+      },
+    });
+
+    if (autoIncidentNeeded) {
+      const incident = await tx.incident.create({
+        data: {
+          orgId: context.activeOrg.id,
+          participantId: shift.participantId,
+          shiftId: shift.id,
+          occurredAt: usedAt,
+          // Start the 24h clock at the moment of restraint use.
+          reportedAt: new Date(),
+          severity: "REPORTABLE",
+          status: "DRAFT",
+          description:
+            `Auto-flagged: ${parsed.data.type.toLowerCase()} restraint used without an active Behaviour Support Plan. ` +
+            `Restraint reason: ${parsed.data.reason}. ` +
+            `Either file the reportable incident with NDIS or update / create the BSP to authorise this restraint retroactively.`,
+          immediateActions: parsed.data.outcome || null,
+          createdById: session?.user?.id ?? null,
+        },
+      });
+      autoIncidentId = incident.id;
+      // Reference the restraint for future audit chain.
+      void restraint;
+    }
   });
 
   revalidatePath(`/provider/shifts/${shiftId}`);
   revalidatePath(`/provider/participants/${shift.participantId}`);
-  return { ok: true };
+  if (autoIncidentId) revalidatePath("/provider/incidents");
+  return {
+    ok: true,
+    autoIncidentId: autoIncidentId ?? undefined,
+  };
 }
