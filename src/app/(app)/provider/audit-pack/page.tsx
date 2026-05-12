@@ -22,6 +22,7 @@ import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { requireManager } from "@/lib/rbac";
 import { ProvidrLogo } from "@/components/providr-logo";
+import { DateField } from "@/components/date-field";
 import {
   CERT_LABEL,
   certStatus,
@@ -216,34 +217,18 @@ export default async function AuditPackPage({
       <Card className="print:hidden">
         <CardContent className="flex flex-wrap items-end gap-4 pt-6">
           <form method="GET" className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <label
-                htmlFor="from"
-                className="text-xs uppercase tracking-wider text-muted-foreground"
-              >
-                From
-              </label>
-              <input
-                id="from"
+            <div className="min-w-[180px]">
+              <DateField
                 name="from"
-                type="date"
+                label="From"
                 defaultValue={toDateInput(from)}
-                className="rounded-md border bg-background px-3 py-2 text-sm"
               />
             </div>
-            <div className="space-y-1">
-              <label
-                htmlFor="to"
-                className="text-xs uppercase tracking-wider text-muted-foreground"
-              >
-                To
-              </label>
-              <input
-                id="to"
+            <div className="min-w-[180px]">
+              <DateField
                 name="to"
-                type="date"
+                label="To"
                 defaultValue={toDateInput(to)}
-                className="rounded-md border bg-background px-3 py-2 text-sm"
               />
             </div>
             <Button type="submit" variant="outline">

@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 import { CERT_LABEL, type CertStatus } from "@/lib/certificates";
 
 import { createShiftAction, type CreateShiftState } from "./actions";
@@ -179,24 +180,7 @@ export function NewShiftForm({ workers, participants }: Props) {
 
           <Separator />
 
-          <div className="space-y-2">
-            <Label htmlFor="date">
-              Date<span className="ml-0.5 text-destructive">*</span>
-            </Label>
-            <Input
-              id="date"
-              name="date"
-              type="date"
-              required
-              defaultValue={todayIso}
-              aria-invalid={!!state.fieldErrors?.date}
-            />
-            {state.fieldErrors?.date && (
-              <p className="text-xs text-destructive">
-                {state.fieldErrors.date}
-              </p>
-            )}
-          </div>
+          <DateField name="date" label="Date" required defaultValue={todayIso} error={state.fieldErrors?.date} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">

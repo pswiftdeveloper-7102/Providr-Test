@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 import { dollarsToCents, formatCents } from "@/lib/utils";
 
 import { createPlanAction, type CreatePlanState } from "./actions";
@@ -68,40 +69,8 @@ export function PlanForm({ participantId, cancelHref }: Props) {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">
-                Start date<span className="ml-0.5 text-destructive">*</span>
-              </Label>
-              <Input
-                id="startDate"
-                name="startDate"
-                type="date"
-                required
-                aria-invalid={!!state.fieldErrors?.startDate}
-              />
-              {state.fieldErrors?.startDate && (
-                <p className="text-xs text-destructive">
-                  {state.fieldErrors.startDate}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">
-                End date<span className="ml-0.5 text-destructive">*</span>
-              </Label>
-              <Input
-                id="endDate"
-                name="endDate"
-                type="date"
-                required
-                aria-invalid={!!state.fieldErrors?.endDate}
-              />
-              {state.fieldErrors?.endDate && (
-                <p className="text-xs text-destructive">
-                  {state.fieldErrors.endDate}
-                </p>
-              )}
-            </div>
+            <DateField name="startDate" label="Start date" required error={state.fieldErrors?.startDate} />
+            <DateField name="endDate" label="End date" required error={state.fieldErrors?.endDate} />
           </div>
         </CardContent>
       </Card>

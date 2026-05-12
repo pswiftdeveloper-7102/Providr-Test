@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 
 import {
   updateEngagementAction,
@@ -90,24 +91,8 @@ export function EditEngagementForm({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="startedAt">Started</Label>
-              <Input
-                id="startedAt"
-                name="startedAt"
-                type="date"
-                defaultValue={values.startedAt}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endedAt">Ended</Label>
-              <Input
-                id="endedAt"
-                name="endedAt"
-                type="date"
-                defaultValue={values.endedAt}
-              />
-            </div>
+            <DateField name="startedAt" label="Started" defaultValue={values.startedAt} />
+            <DateField name="endedAt" label="Ended" defaultValue={values.endedAt} />
           </div>
 
           <div className="space-y-2">

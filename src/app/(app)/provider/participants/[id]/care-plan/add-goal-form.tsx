@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DateField } from "@/components/date-field";
 import type { GoalCategory } from "@prisma/client";
 
 import { addGoalAction, type AddGoalState } from "./actions";
@@ -108,10 +109,7 @@ export function AddGoalForm({ carePlanId }: { carePlanId: string }) {
             </SelectContent>
           </Select>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="goal-targetDate">Target date</Label>
-          <Input id="goal-targetDate" name="targetDate" type="date" />
-        </div>
+        <DateField name="targetDate" label="Target date" />
       </div>
 
       <div className="space-y-2">

@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 
 import {
   createAgreementAction,
@@ -48,52 +49,16 @@ export function AgreementForm({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">
-                Start date<span className="ml-0.5 text-destructive">*</span>
-              </Label>
-              <Input
-                id="startDate"
-                name="startDate"
-                type="date"
-                required
-                aria-invalid={!!state.fieldErrors?.startDate}
-              />
-              {state.fieldErrors?.startDate && (
-                <p className="text-xs text-destructive">
-                  {state.fieldErrors.startDate}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End date</Label>
-              <Input
-                id="endDate"
-                name="endDate"
-                type="date"
-                aria-invalid={!!state.fieldErrors?.endDate}
-              />
-              {state.fieldErrors?.endDate && (
-                <p className="text-xs text-destructive">
-                  {state.fieldErrors.endDate}
-                </p>
-              )}
-            </div>
+            <DateField name="startDate" label="Start date" required error={state.fieldErrors?.startDate} />
+            <DateField name="endDate" label="End date" error={state.fieldErrors?.endDate} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="signedAt">Date signed by participant</Label>
-            <Input
-              id="signedAt"
-              name="signedAt"
-              type="date"
-              aria-invalid={!!state.fieldErrors?.signedAt}
-            />
-            <p className="text-xs text-muted-foreground">
-              Setting this marks the agreement as Active. Leave blank to
-              keep it as Draft.
-            </p>
-          </div>
+          <DateField
+            name="signedAt"
+            label="Date signed by participant"
+            error={state.fieldErrors?.signedAt}
+            helperText="Setting this marks the agreement as Active. Leave blank to keep it as Draft."
+          />
 
           <Separator />
 

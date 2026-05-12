@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 
 import {
   addTrainingAction,
@@ -97,22 +98,8 @@ export function TrainingSection({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="training-completed">
-                Completed<span className="ml-0.5 text-destructive">*</span>
-              </Label>
-              <Input
-                id="training-completed"
-                name="completedAt"
-                type="date"
-                aria-invalid={!!state.fieldErrors?.completedAt}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="training-expires">Expires (optional)</Label>
-              <Input id="training-expires" name="expiresAt" type="date" />
-            </div>
+            <DateField name="completedAt" label="Completed" required />
+            <DateField name="expiresAt" label="Expires (optional)" />
           </div>
 
           <div className="space-y-2">

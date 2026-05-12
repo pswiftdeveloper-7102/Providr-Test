@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneField } from "@/components/phone-field";
+import { DateField } from "@/components/date-field";
 import {
   Select,
   SelectContent,
@@ -145,16 +146,14 @@ export default function NewWorkerPage() {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                id="ndisWorkerCheckExpiry"
+              <DateField
+                name="ndisWorkerCheckExpiry"
                 label="NDIS Worker Check expiry"
-                type="date"
                 error={state.fieldErrors?.ndisWorkerCheckExpiry}
               />
-              <Field
-                id="firstAidExpiry"
+              <DateField
+                name="firstAidExpiry"
                 label="First Aid expiry"
-                type="date"
                 error={state.fieldErrors?.firstAidExpiry}
               />
             </div>

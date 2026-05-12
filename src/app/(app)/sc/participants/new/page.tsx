@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
 import { PhoneField } from "@/components/phone-field";
+import { DateField } from "@/components/date-field";
 
 import {
   createSCParticipantAction,
@@ -72,12 +73,11 @@ export default function NewSCParticipantPage() {
                 error={state.fieldErrors?.ndisNumber}
                 placeholder="e.g. 4300012345"
               />
-              <Field
+              <DateField
                 name="dateOfBirth"
                 label="Date of birth"
-                type="date"
                 max={todayLocalDate()}
-                helperText="dd/mm/yyyy — can't be in the future"
+                helperText="Can't be in the future"
                 error={state.fieldErrors?.dateOfBirth}
               />
             </div>

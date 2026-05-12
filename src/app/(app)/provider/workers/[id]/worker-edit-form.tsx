@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { FormError } from "@/components/form-error";
 import { PhoneField } from "@/components/phone-field";
+import { DateField } from "@/components/date-field";
 import {
   CERT_LABEL,
   certStatus,
@@ -118,27 +119,25 @@ export function WorkerEditForm({ worker }: { worker: WorkerData }) {
             <Separator />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                id="ndisWorkerCheckExpiry"
+              <DateField
+                name="ndisWorkerCheckExpiry"
                 label="NDIS Worker Check expiry"
-                type="date"
                 defaultValue={
                   worker.ndisWorkerCheckExpiry
                     ? worker.ndisWorkerCheckExpiry
                         .toISOString()
                         .slice(0, 10)
-                    : ""
+                    : undefined
                 }
                 error={state.fieldErrors?.ndisWorkerCheckExpiry}
               />
-              <Field
-                id="firstAidExpiry"
+              <DateField
+                name="firstAidExpiry"
                 label="First Aid expiry"
-                type="date"
                 defaultValue={
                   worker.firstAidExpiry
                     ? worker.firstAidExpiry.toISOString().slice(0, 10)
-                    : ""
+                    : undefined
                 }
                 error={state.fieldErrors?.firstAidExpiry}
               />

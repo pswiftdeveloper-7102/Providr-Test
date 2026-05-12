@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 import { formatCents } from "@/lib/utils";
 
 import { logSpendAction, type SpendFormState } from "../actions";
@@ -128,19 +129,7 @@ export function LogSpendForm({
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="occurredAt">
-                When<span className="ml-0.5 text-destructive">*</span>
-              </Label>
-              <Input
-                id="occurredAt"
-                name="occurredAt"
-                type="date"
-                defaultValue={todayLocalDate()}
-                aria-invalid={!!state.fieldErrors?.occurredAt}
-                required
-              />
-            </div>
+            <DateField name="occurredAt" label="When" required defaultValue={todayLocalDate()} />
           </div>
 
           <div className="space-y-2">

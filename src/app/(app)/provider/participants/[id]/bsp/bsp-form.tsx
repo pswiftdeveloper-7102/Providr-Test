@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 
 import {
   createBSPAction,
@@ -89,24 +90,8 @@ export function BSPForm({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="effectiveFrom">Effective from</Label>
-                <Input
-                  id="effectiveFrom"
-                  name="effectiveFrom"
-                  type="date"
-                  defaultValue={dateForInput(values?.effectiveFrom)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="effectiveTo">Effective to</Label>
-                <Input
-                  id="effectiveTo"
-                  name="effectiveTo"
-                  type="date"
-                  defaultValue={dateForInput(values?.effectiveTo)}
-                />
-              </div>
+              <DateField name="effectiveFrom" label="Effective from" defaultValue={dateForInput(values?.effectiveFrom)} />
+              <DateField name="effectiveTo" label="Effective to" defaultValue={dateForInput(values?.effectiveTo)} />
             </div>
 
             <div className="space-y-2">

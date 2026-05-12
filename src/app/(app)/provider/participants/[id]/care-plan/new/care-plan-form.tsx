@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 
 import {
   createCarePlanAction,
@@ -81,31 +82,8 @@ export function CarePlanForm({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="effectiveFrom">Effective from</Label>
-                <Input
-                  id="effectiveFrom"
-                  name="effectiveFrom"
-                  type="date"
-                  defaultValue={dateForInput(values?.effectiveFrom)}
-                  aria-invalid={!!state.fieldErrors?.effectiveFrom}
-                />
-                {state.fieldErrors?.effectiveFrom && (
-                  <p className="text-xs text-destructive">
-                    {state.fieldErrors.effectiveFrom}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="effectiveTo">Effective to</Label>
-                <Input
-                  id="effectiveTo"
-                  name="effectiveTo"
-                  type="date"
-                  defaultValue={dateForInput(values?.effectiveTo)}
-                  aria-invalid={!!state.fieldErrors?.effectiveTo}
-                />
-              </div>
+              <DateField name="effectiveFrom" label="Effective from" defaultValue={dateForInput(values?.effectiveFrom)} error={state.fieldErrors?.effectiveFrom} />
+              <DateField name="effectiveTo" label="Effective to" defaultValue={dateForInput(values?.effectiveTo)} />
             </div>
 
             <div className="space-y-2">

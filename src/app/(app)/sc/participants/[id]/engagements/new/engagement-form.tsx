@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 
 import {
   createEngagementAction,
@@ -131,14 +132,8 @@ export function EngagementForm({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="startedAt">Started</Label>
-              <Input id="startedAt" name="startedAt" type="date" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="endedAt">Ended (if applicable)</Label>
-              <Input id="endedAt" name="endedAt" type="date" />
-            </div>
+            <DateField name="startedAt" label="Started" />
+            <DateField name="endedAt" label="Ended (if applicable)" />
           </div>
 
           <div className="space-y-2">

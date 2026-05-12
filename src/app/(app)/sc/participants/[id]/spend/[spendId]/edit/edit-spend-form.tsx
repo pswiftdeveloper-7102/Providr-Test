@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FormError } from "@/components/form-error";
+import { DateField } from "@/components/date-field";
 
 import {
   updateSpendAction,
@@ -69,16 +70,7 @@ export function EditSpendForm({
                   </p>
                 )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="occurredAt">When</Label>
-                <Input
-                  id="occurredAt"
-                  name="occurredAt"
-                  type="date"
-                  defaultValue={values.occurredAt}
-                  required
-                />
-              </div>
+              <DateField name="occurredAt" label="When" required defaultValue={values.occurredAt} />
             </div>
 
             <div className="space-y-2">

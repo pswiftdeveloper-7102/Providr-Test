@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FormError } from "@/components/form-error";
 import { PhoneField } from "@/components/phone-field";
+import { DateField } from "@/components/date-field";
 
 import {
   createParticipantAction,
@@ -80,12 +81,11 @@ export default function NewParticipantPage() {
             />
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field
-                id="dateOfBirth"
+              <DateField
+                name="dateOfBirth"
                 label="Date of birth"
-                type="date"
                 max={todayLocalDate()}
-                helperText="dd/mm/yyyy — can't be in the future"
+                helperText="Can't be in the future"
                 error={state.fieldErrors?.dateOfBirth}
               />
               <Field
