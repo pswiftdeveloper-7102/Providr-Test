@@ -174,16 +174,19 @@ export async function addMarAction(
   const { shift } = await loadShift(shiftId);
   if (!shift) return { error: "Shift not found." };
 
+  // Several of these only render conditionally — `?? undefined` so the
+  // zod schema treats them as missing (i.e. optional) rather than `null`
+  // (which it rejects). Same fix as the signup hybrid second-org fields.
   const parsed = marSchema.safeParse({
-    medication: formData.get("medication"),
-    dose: formData.get("dose"),
-    givenAt: formData.get("givenAt"),
-    notes: formData.get("notes"),
+    medication: formData.get("medication") ?? undefined,
+    dose: formData.get("dose") ?? undefined,
+    givenAt: formData.get("givenAt") ?? undefined,
+    notes: formData.get("notes") ?? undefined,
     status: formData.get("status") || "GIVEN",
-    missedReason: formData.get("missedReason"),
+    missedReason: formData.get("missedReason") ?? undefined,
     isPrn: formData.get("isPrn") ?? undefined,
-    prnReason: formData.get("prnReason"),
-    prnOutcome: formData.get("prnOutcome"),
+    prnReason: formData.get("prnReason") ?? undefined,
+    prnOutcome: formData.get("prnOutcome") ?? undefined,
   });
   if (!parsed.success) {
     const fieldErrors: AddMarState["fieldErrors"] = {};

@@ -90,14 +90,18 @@ export async function signupAction(
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
     signUpAs: formData.get("signUpAs") || undefined,
-    companyLegalName: formData.get("companyLegalName"),
-    companyTradingName: formData.get("companyTradingName"),
+    companyLegalName: formData.get("companyLegalName") ?? undefined,
+    companyTradingName: formData.get("companyTradingName") ?? undefined,
     abn: formData.get("abn") ?? undefined,
     isNdisRegistered: formData.get("isNdisRegistered") ?? undefined,
-    alsoOperatesOther: formData.get("alsoOperatesOther") ?? undefined,
+    alsoOperatesOther: formData.get("alsoOperatesOther") || undefined,
     hybridOrgType: formData.get("hybridOrgType") || undefined,
-    otherCompanyLegalName: formData.get("otherCompanyLegalName"),
-    otherCompanyTradingName: formData.get("otherCompanyTradingName"),
+    // These three only render in the DOM when the user picks "separate
+    // org" — without `?? undefined` they come through as `null` and the
+    // zod string schema rejects it.
+    otherCompanyLegalName: formData.get("otherCompanyLegalName") ?? undefined,
+    otherCompanyTradingName:
+      formData.get("otherCompanyTradingName") ?? undefined,
     otherAbn: formData.get("otherAbn") ?? undefined,
     acceptedTerms: formData.get("acceptedTerms") ?? undefined,
   });
