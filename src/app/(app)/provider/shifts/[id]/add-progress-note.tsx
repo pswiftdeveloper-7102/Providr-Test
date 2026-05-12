@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 
 import { addProgressNoteAction, type AddNoteState } from "./actions";
@@ -15,10 +16,14 @@ export function AddProgressNoteForm({ shiftId }: { shiftId: string }) {
     initial
   );
   const formRef = useRef<HTMLFormElement>(null);
+  const [isHandover, setIsHandover] = useState(false);
 
   // Reset the textarea after a successful save.
   useEffect(() => {
-    if (state.ok) formRef.current?.reset();
+    if (state.ok) {
+      formRef.current?.reset();
+      setIsHandover(false);
+    }
   }, [state]);
 
   return (
@@ -26,13 +31,27 @@ export function AddProgressNoteForm({ shiftId }: { shiftId: string }) {
       <Textarea
         name="body"
         rows={3}
-        placeholder="What just happened? — quick note, what was tried, how Sarah responded…"
+        placeholder={
+          isHandover
+            ? "Brief the next worker — what's done, what's pending, anything they should watch for."
+            : "What just happened? — quick note, what was tried, how Sarah responded…"
+        }
         aria-invalid={!!state.fieldErrors?.body}
         required
       />
       {state.fieldErrors?.body && (
         <p className="text-xs text-destructive">{state.fieldErrors.body}</p>
       )}
+
+      <label className="flex items-center gap-2 text-sm">
+        <Checkbox
+          name="isHandover"
+          checked={isHandover}
+          onCheckedChange={(checked) => setIsHandover(checked === true)}
+        />
+        End-of-shift handover (briefs the next worker)
+      </label>
+
       {state.error && (
         <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {state.error}
@@ -40,7 +59,7 @@ export function AddProgressNoteForm({ shiftId }: { shiftId: string }) {
       )}
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Saving…" : "Add note"}
+          {pending ? "Saving…" : isHandover ? "Save handover" : "Add note"}
         </Button>
       </div>
     </form>

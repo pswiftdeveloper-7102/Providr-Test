@@ -3,6 +3,7 @@ import {
   ArrowRight,
   CalendarClock,
   ChevronRight,
+  ClipboardCheck,
   ClipboardList,
   Clock,
   FileSignature,
@@ -31,7 +32,7 @@ import { Button } from "@/components/ui/button";
 
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
-import { isManager } from "@/lib/rbac";
+import { getActiveRoles, isManager, ROLE_LABEL } from "@/lib/rbac";
 import {
   certStatus,
   CERT_LABEL,
@@ -135,6 +136,13 @@ export default async function ProviderHome() {
   const warningCutoff = new Date(now);
   warningCutoff.setDate(warningCutoff.getDate() + EXPIRY_WARNING_DAYS);
 
+  // Window for renewals due — Phase 6 work shown on the dashboard for
+  // roles that drive the review cycle.
+  const reviewHorizon = new Date(now);
+  reviewHorizon.setDate(reviewHorizon.getDate() + 90);
+
+  const activeRoles = getActiveRoles(context);
+
   const [
     participantCount,
     workerCount,
@@ -143,6 +151,8 @@ export default async function ProviderHome() {
     todayShifts,
     reportableIncidents,
     expiringWorkers,
+    reviewsDueCount,
+    participantsWithoutCarePlanCount,
   ] = await Promise.all([
     db.participant.count({ where: { orgId } }),
     db.worker.count({ where: { orgId } }),
@@ -197,6 +207,38 @@ export default async function ProviderHome() {
         firstAidExpiry: true,
       },
     }),
+    // Total renewal items in the 90-day window — covers plans, care plans,
+    // and service agreements. Mirrors what /provider/reviews surfaces.
+    Promise.all([
+      db.plan.count({
+        where: {
+          participant: { orgId },
+          status: { in: ["ACTIVE", "DRAFT"] },
+          endDate: { lte: reviewHorizon },
+        },
+      }),
+      db.carePlan.count({
+        where: {
+          orgId,
+          status: "ACTIVE",
+          effectiveTo: { not: null, lte: reviewHorizon },
+        },
+      }),
+      db.serviceAgreement.count({
+        where: {
+          participant: { orgId },
+          status: "ACTIVE",
+          endDate: { not: null, lte: reviewHorizon },
+        },
+      }),
+    ]).then((counts) => counts.reduce((a, b) => a + b, 0)),
+    // Participants with no DRAFT/ACTIVE care plan — Care manager's beat.
+    db.participant.count({
+      where: {
+        orgId,
+        carePlans: { none: { status: { in: ["DRAFT", "ACTIVE"] } } },
+      },
+    }),
   ]);
 
   // Derive the action items: only incidents still pending/overdue belong
@@ -222,6 +264,84 @@ export default async function ProviderHome() {
     { label: "Open shifts", value: openShifts },
     { label: "Open incidents", value: openIncidents },
   ];
+
+  // Role-aware focus items — different roles see different priority cards.
+  // We union across all of the user's manager roles to avoid hiding
+  // anything for users who wear two hats.
+  type FocusItem = {
+    key: string;
+    icon: typeof HeartPulse;
+    label: string;
+    value: number;
+    href: string;
+    urgent?: boolean;
+    helper?: string;
+  };
+  const focusItems: FocusItem[] = [];
+  const seenKeys = new Set<string>();
+  const pushFocus = (item: FocusItem) => {
+    if (seenKeys.has(item.key)) return;
+    seenKeys.add(item.key);
+    focusItems.push(item);
+  };
+
+  if (activeRoles.includes("ROSTERING_MANAGER")) {
+    pushFocus({
+      key: "today-shifts",
+      icon: CalendarClock,
+      label: "Shifts today",
+      value: todayShifts.length,
+      href: "/provider/roster",
+      helper: "Rostering",
+    });
+  }
+  if (activeRoles.includes("CARE_MANAGER") || activeRoles.includes("OWNER")) {
+    pushFocus({
+      key: "participants-no-plan",
+      icon: HeartPulse,
+      label: "Without an active care plan",
+      value: participantsWithoutCarePlanCount,
+      href: "/provider/participants",
+      urgent: participantsWithoutCarePlanCount > 0,
+      helper: "Care",
+    });
+    pushFocus({
+      key: "reviews-due",
+      icon: ClipboardCheck,
+      label: "Reviews due in 90 days",
+      value: reviewsDueCount,
+      href: "/provider/reviews",
+      urgent: reviewsDueCount > 0,
+      helper: "Care",
+    });
+  }
+  if (
+    activeRoles.includes("COMPLIANCE_MANAGER") ||
+    activeRoles.includes("OWNER")
+  ) {
+    pushFocus({
+      key: "incident-pending",
+      icon: ShieldAlert,
+      label: "Reportable incidents pending NDIS",
+      value: incidentItems.length,
+      href: "/provider/incidents",
+      urgent: incidentItems.length > 0,
+      helper: "Compliance",
+    });
+    pushFocus({
+      key: "certs-expiring",
+      icon: HardHat,
+      label: "Workers with certs expiring",
+      value: certItems.length,
+      href: "/provider/workers",
+      urgent: certItems.some((c) => c.status === "expired"),
+      helper: "Compliance",
+    });
+  }
+
+  const roleLabels = activeRoles
+    .filter((r) => r !== "SUPPORT_WORKER" && r !== "SUPPORT_COORDINATOR")
+    .map((r) => ROLE_LABEL[r]);
 
   return (
     <div className="space-y-10">
@@ -257,6 +377,69 @@ export default async function ProviderHome() {
           </Button>
         </div>
       </header>
+
+      {focusItems.length > 0 && (
+        <section aria-labelledby="focus-heading" className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 id="focus-heading" className="text-lg font-semibold">
+              Your focus
+            </h2>
+            {roleLabels.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Signed in as {roleLabels.join(" · ")}
+              </p>
+            )}
+          </div>
+          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {focusItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.key}>
+                  <Link href={item.href} className="block">
+                    <Card
+                      size="sm"
+                      className={
+                        item.urgent
+                          ? "border-destructive/40 transition-colors hover:bg-destructive/5"
+                          : "transition-colors hover:bg-muted/40"
+                      }
+                    >
+                      <CardContent>
+                        <div className="flex items-start gap-3">
+                          <div
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                              item.urgent
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-2xl font-semibold tracking-tight">
+                                {item.value}
+                              </span>
+                              {item.helper && (
+                                <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                                  {item.helper}
+                                </span>
+                              )}
+                            </div>
+                            <p className="mt-0.5 text-sm text-muted-foreground">
+                              {item.label}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <section
         aria-labelledby="stats-heading"

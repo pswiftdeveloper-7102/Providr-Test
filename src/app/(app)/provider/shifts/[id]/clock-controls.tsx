@@ -1,9 +1,10 @@
 "use client";
 
-import { useTransition } from "react";
-import { LogIn, LogOut } from "lucide-react";
+import { useState, useTransition } from "react";
+import { LogIn, LogOut, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,6 +21,7 @@ type Props = {
   status: "SCHEDULED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
   actualStart: Date | null;
   actualEnd: Date | null;
+  progressNoteCount: number;
 };
 
 export function ClockControls({
@@ -27,17 +29,26 @@ export function ClockControls({
   status,
   actualStart,
   actualEnd,
+  progressNoteCount,
 }: Props) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const noNotesYet = progressNoteCount === 0;
+  const canClockOut = status === "IN_PROGRESS" && !noNotesYet;
 
   const onClockIn = () => {
+    setError(null);
     startTransition(async () => {
-      await clockInAction(shiftId);
+      const res = await clockInAction(shiftId);
+      if (res?.error) setError(res.error);
     });
   };
   const onClockOut = () => {
+    setError(null);
     startTransition(async () => {
-      await clockOutAction(shiftId);
+      const res = await clockOutAction(shiftId);
+      if (res?.error) setError(res.error);
     });
   };
 
@@ -55,7 +66,7 @@ export function ClockControls({
           {status === "CANCELLED" && "This shift was cancelled."}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           {status === "SCHEDULED" && (
             <Button onClick={onClockIn} disabled={pending}>
@@ -64,7 +75,15 @@ export function ClockControls({
             </Button>
           )}
           {status === "IN_PROGRESS" && (
-            <Button onClick={onClockOut} disabled={pending}>
+            <Button
+              onClick={onClockOut}
+              disabled={pending || !canClockOut}
+              title={
+                noNotesYet
+                  ? "Add at least one progress note before clocking out."
+                  : undefined
+              }
+            >
               <LogOut />
               {pending ? "Clocking out…" : "Clock out"}
             </Button>
@@ -90,6 +109,23 @@ export function ClockControls({
             </span>
           </div>
         </div>
+
+        {status === "IN_PROGRESS" && noNotesYet && (
+          <Alert>
+            <AlertTriangle />
+            <AlertTitle>Add a progress note before clocking out</AlertTitle>
+            <AlertDescription>
+              Notes get skipped most often at the end of a shift. Even a
+              one-line &ldquo;quiet shift, no events&rdquo; counts.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   );

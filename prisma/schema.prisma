@@ -43,11 +43,18 @@ model Org {
   memberships            OrgMembership[]
   conflictOfInterestForm ConflictOfInterestForm?
 
-  participants Participant[]
-  workers      Worker[]
-  shifts       Shift[]
-  incidents    Incident[]
-  carePlans    CarePlan[]
+  participants          Participant[]
+  workers               Worker[]
+  shifts                Shift[]
+  incidents             Incident[]
+  carePlans             CarePlan[]
+  behaviourSupportPlans BehaviourSupportPlan[]
+  restraintRecords      RestraintRecord[]
+  trainingRecords       TrainingRecord[]
+  externalProviders     ExternalProvider[]
+  escalations           Escalation[]
+  spendEntries          SpendEntry[]
+  communicationLogs     CommunicationLog[]
 }
 
 model OrgEntitlement {
@@ -155,14 +162,24 @@ model Participant {
   email       String?
   phone       String?
   address     String?
+  // Per the upcoming NDIA changes — SC will only serve participants with
+  // complex needs. Flag here so the platform is ready when criteria land.
+  complexNeeds Boolean  @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  plans             Plan[]
-  shifts            Shift[]
-  incidents         Incident[]
-  serviceAgreements ServiceAgreement[]
-  carePlans         CarePlan[]
+  plans                 Plan[]
+  shifts                Shift[]
+  incidents             Incident[]
+  serviceAgreements     ServiceAgreement[]
+  carePlans             CarePlan[]
+  behaviourSupportPlans BehaviourSupportPlan[]
+  restraintRecords      RestraintRecord[]
+  engagements           ScEngagement[]
+  escalations           Escalation[]
+  informalSupports      InformalSupport[]
+  externalContacts      ExternalContact[]
+  communicationLogs     CommunicationLog[]
 }
 
 // NDIS plans live under a participant. A plan has a date range and a total
@@ -190,6 +207,10 @@ model Plan {
   endDate        DateTime
   totalCents     Int
   status         PlanStatus @default(ACTIVE)
+  // Optional PDF of the original NDIS plan — SC Job 1 ("open Sarah's PDF
+  // plan"). Stored via the same `/api/uploads/[key]` route as other files.
+  planFileKey    String?
+  planFileName   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -206,6 +227,8 @@ model PlanBudget {
   category    BudgetCategory
   totalCents  Int
   spentCents  Int            @default(0)
+
+  spendEntries SpendEntry[]
 
   @@unique([planId, category])
 }
@@ -264,10 +287,53 @@ model CarePlan {
   effectiveTo   DateTime?
   summary       String?        @db.Text
 
+  // Q3 (2026-05-11): support workers must be able to view these — they're
+  // the context that makes safe care delivery possible. Free text in v1;
+  // can become structured later (e.g. EmergencyContact relation, Risk
+  // assessments with severity/likelihood).
+  communicationPreferences String? @db.Text
+  medicalConditions        String? @db.Text
+  allergies                String? @db.Text
+  risks                    String? @db.Text
+  emergencyContacts        String? @db.Text
+  culturalConsiderations   String? @db.Text
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   goals Goal[]
+
+  @@index([participantId, status])
+}
+
+// Behaviour Support Plan — a distinct clinical document written by a
+// behaviour support practitioner (Worker.type = BEHAVIOUR_SUPPORT). Per
+// Q3 (2026-05-11), support workers must be able to view this but never
+// edit it. Triggers, de-escalation strategies, and "what NOT to do" are
+// the operationally critical sections.
+enum BSPStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+model BehaviourSupportPlan {
+  id            String      @id @default(cuid())
+  orgId         String
+  org           Org         @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  status        BSPStatus   @default(DRAFT)
+  effectiveFrom DateTime?
+  effectiveTo   DateTime?
+  authoredById  String?     // Worker.id of the behaviour support practitioner
+  summary       String?     @db.Text
+  triggers      String?     @db.Text
+  deescalation  String?     @db.Text
+  whatNotToDo   String?     @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([participantId, status])
 }
@@ -298,6 +364,9 @@ model Goal {
   category    GoalCategory @default(OTHER)
   status      GoalStatus   @default(IN_PROGRESS)
   targetDate  DateTime?
+  // Narrative of what worked, written for the evidence pack — SC Job 6
+  // ("show what worked, show what's needed").
+  evidenceSummary String?  @db.Text
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -332,7 +401,8 @@ model Worker {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  shifts Shift[]
+  shifts          Shift[]
+  trainingRecords TrainingRecord[]
 }
 
 enum ShiftStatus {
@@ -368,31 +438,59 @@ model Shift {
 // Free-text shift notes written by the support worker during/after the shift.
 // Multiple per shift, timestamped. The end-of-shift "finalise notes" step
 // from Provider Scene C is just the final note in this list.
+//
+// Q4 paperwork-friction #2 (2026-05-11): the end-of-shift handover note is
+// flagged separately via `isHandover` so the clock-out flow can prompt for
+// it and the next shift can surface it prominently.
 model ProgressNote {
-  id        String   @id @default(cuid())
-  shiftId   String
-  shift     Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  authorId  String?
-  body      String   @db.Text
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  shiftId     String
+  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  authorId    String?
+  body        String   @db.Text
+  isHandover  Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   @@index([shiftId, createdAt])
+  @@index([shiftId, isHandover])
 }
 
-// Medication Administration Record entries — one row per dose given. v1
-// keeps the model simple (medication name + optional dose + when given);
-// PRN tracking and refusal/missed-dose reason codes are deferred until
-// the client confirms how they want to handle them.
+// Medication Administration Record entries — one row per administration
+// attempt during a shift, whether the dose was given or not.
+//
+// Client decisions (2026-05-11):
+//   * Same form for PRN and scheduled — `isPrn` flag plus `prnReason` /
+//     `prnOutcome` (the latter can be filled in later once the medication
+//     takes effect).
+//   * Missed doses use a status enum + optional free-text. `missedReason`
+//     is required only when status = OTHER; UI enforces that. No automatic
+//     escalation logic in v1 — provider policy handles that, system just
+//     records what happened.
+enum MedicationStatus {
+  GIVEN
+  REFUSED
+  UNAVAILABLE
+  OUT_OF_STOCK
+  FORGOTTEN
+  CLINICAL_HOLD
+  OTHER
+}
+
 model MedicationRecord {
-  id         String   @id @default(cuid())
-  shiftId    String
-  shift      Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
-  medication String
-  dose       String?
-  givenAt    DateTime
-  givenById  String?
-  notes      String?  @db.Text
-  createdAt  DateTime @default(now())
+  id           String           @id @default(cuid())
+  shiftId      String
+  shift        Shift            @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  medication   String
+  dose         String?
+  givenAt      DateTime
+  givenById    String?
+  notes        String?          @db.Text
+  status       MedicationStatus @default(GIVEN)
+  missedReason String?          @db.Text
+  isPrn        Boolean          @default(false)
+  prnReason    String?          @db.Text
+  prnOutcome   String?          @db.Text
+  createdAt    DateTime         @default(now())
 
   @@index([shiftId, givenAt])
 }
@@ -409,6 +507,301 @@ enum IncidentStatus {
   REPORTED
   UNDER_REVIEW
   CLOSED
+}
+
+// Restraint use record — Provider Scene D (compliance iceberg) calls these
+// out as a distinct artefact. NDIS requires every restraint use to be
+// logged, including the type, justification, who authorised it, and what
+// happened. Five canonical types in v1; "chemical" is a sensitive area —
+// in practice it overlaps with PRN medication on the MAR, so we keep the
+// types parallel and let the record cross-reference if needed.
+enum RestraintType {
+  PHYSICAL
+  MECHANICAL
+  CHEMICAL
+  ENVIRONMENTAL
+  SECLUSION
+}
+
+model RestraintRecord {
+  id              String        @id @default(cuid())
+  orgId           String
+  org             Org           @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  participantId   String
+  participant     Participant   @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  shiftId         String?
+  type            RestraintType
+  usedAt          DateTime
+  durationMinutes Int?
+  reason          String        @db.Text
+  outcome         String?       @db.Text
+  authorisedById  String?
+  createdById     String?
+  // Snapshot of the BSP id active at the time, if any — for audit chain
+  bspIdAtTime     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([participantId, usedAt])
+  @@index([orgId, usedAt])
+}
+
+// ─── Support Coordinator domain ────────────────────────────────────────
+//
+// The SC portal sits at a different level than the Provider portal: the SC
+// orchestrates a participant's care ACROSS multiple providers. In our
+// tenancy model, the SC's `Org` holds the SC portal entitlement, and the
+// SC's `Participant` records are their own — they're not shared with the
+// provider orgs the participant uses.
+//
+// For same-org hybrid customers (one Org has both PROVIDER + SC), the
+// participant exists once under that Org and both portals see them.
+// For separate-org hybrids and pure SCs, the SC keeps its own record
+// (linked to external providers by NDIS number when needed).
+
+// External provider directory — SC Job 2 (Scene B): "find providers" and
+// "negotiate rates". This is the SC's address book of providers in their
+// network, not other tenant Orgs in our system.
+model ExternalProvider {
+  id                     String   @id @default(cuid())
+  orgId                  String
+  org                    Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name                   String
+  abn                    String?
+  ndisRegistrationNumber String?
+  serviceCategories      String?  // free text in v1 — comma-separated tags
+  rating                 Int?     // 1-5, optional
+  capacityStatus         String?  // "accepting" | "waitlist" | "full" — free text v1
+  rateNotes              String?  @db.Text
+  contactName            String?
+  contactEmail           String?
+  contactPhone           String?
+  notes                  String?  @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  engagements ScEngagement[]
+
+  @@index([orgId, name])
+}
+
+// SC Engagement — SC Job 3 (Scene B): "set up the team". Links a
+// participant to an external provider, tracks the lifecycle of that
+// relationship (proposed → agreement sent → active → ended/declined).
+enum ScEngagementStatus {
+  PROPOSED
+  AGREEMENT_SENT
+  ACTIVE
+  ENDED
+  DECLINED
+}
+
+model ScEngagement {
+  id                 String             @id @default(cuid())
+  participantId      String
+  participant        Participant        @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  externalProviderId String
+  externalProvider   ExternalProvider   @relation(fields: [externalProviderId], references: [id], onDelete: Cascade)
+  status             ScEngagementStatus @default(PROPOSED)
+  startedAt          DateTime?
+  endedAt            DateTime?
+  serviceSummary     String?            @db.Text
+  notes              String?            @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([participantId, status])
+}
+
+// Escalation — SC Job 5 (Scene B): "handle crises". Provider dropped the
+// participant, hospital admission, reportable incident across the care
+// team, family issue, emergency cover. Distinct from the provider-side
+// Incident model (which is hands-on care incidents inside one org's
+// shifts).
+enum EscalationType {
+  PROVIDER_DROP
+  HOSPITAL
+  REPORTABLE_INCIDENT
+  FAMILY_ISSUE
+  EMERGENCY_COVER
+  PLAN_BREACH
+  OTHER
+}
+
+enum EscalationStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+model Escalation {
+  id            String           @id @default(cuid())
+  orgId         String
+  org           Org              @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant      @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  type          EscalationType
+  status        EscalationStatus @default(OPEN)
+  openedAt      DateTime         @default(now())
+  resolvedAt    DateTime?
+  description   String           @db.Text
+  resolution    String?          @db.Text
+  createdById   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, status])
+  @@index([participantId, openedAt])
+}
+
+// Informal supports — Scene A includes family in "the system" the SC
+// bridges to. Distinct from the formal `ExternalContact` (NDIA, hospital,
+// etc.) and from emergency contacts captured as text on CarePlan.
+enum InformalSupportRelationship {
+  FAMILY
+  FRIEND
+  GUARDIAN
+  ADVOCATE
+  OTHER
+}
+
+model InformalSupport {
+  id            String                       @id @default(cuid())
+  participantId String
+  participant   Participant                  @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  name          String
+  relationship  InformalSupportRelationship  @default(FAMILY)
+  phone         String?
+  email         String?
+  notes         String?                      @db.Text
+  isPrimary     Boolean                      @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([participantId])
+}
+
+// External system contacts — Scene A's "the system": NDIA planner, GP,
+// hospital coordinator, housing service, mental health team. Anything
+// outside the SC's own org or the providers in the directory.
+enum ExternalContactType {
+  NDIA_PLANNER
+  PLAN_MANAGER
+  GP
+  HOSPITAL
+  ALLIED_HEALTH
+  MENTAL_HEALTH
+  HOUSING
+  EDUCATION
+  OTHER
+}
+
+model ExternalContact {
+  id            String              @id @default(cuid())
+  participantId String
+  participant   Participant         @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  type          ExternalContactType
+  organisationName String?
+  contactName   String?
+  email         String?
+  phone         String?
+  notes         String?             @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([participantId, type])
+}
+
+// Communication log — Scene C's "typical day" opens with a roster-change
+// call and includes an OT report arriving, an incident call, plan review
+// prep. The SC's day is interrupt-driven; logging touchpoints is part of
+// the audit trail.
+enum CommunicationDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CommunicationChannel {
+  PHONE
+  EMAIL
+  SMS
+  IN_PERSON
+  VIDEO
+  OTHER
+}
+
+model CommunicationLog {
+  id            String                  @id @default(cuid())
+  orgId         String
+  org           Org                     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant             @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  occurredAt    DateTime
+  direction     CommunicationDirection
+  channel       CommunicationChannel
+  withParty     String                  // Free text — "Sarah's mum", "OT Jenny", "Acme rostering manager"
+  summary       String                  @db.Text
+  followUp      String?                 @db.Text
+  createdById   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, occurredAt])
+  @@index([participantId, occurredAt])
+}
+
+// Spend entry — SC Job 4 (Scene B): "watch the money across all
+// providers". The SC logs invoices/spend as they arrive from providers
+// (or the plan manager). Each entry updates the running total on a
+// PlanBudget bucket so the SC can project burn rate across the year.
+model SpendEntry {
+  id            String         @id @default(cuid())
+  orgId         String
+  org           Org            @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  planBudgetId  String
+  planBudget    PlanBudget     @relation(fields: [planBudgetId], references: [id], onDelete: Cascade)
+  occurredAt    DateTime
+  amountCents   Int
+  description   String         @db.Text
+  providerName  String?        // free text — which external provider
+  createdById   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([planBudgetId, occurredAt])
+  @@index([orgId, occurredAt])
+}
+
+// Training record — Provider Scene D iceberg explicitly distinguishes
+// "training records" from compliance certificates (NDIS Worker Check,
+// First Aid). Cert expiry is a hard gate; training is the longer tail of
+// ongoing development the org tracks for audit prep.
+model TrainingRecord {
+  id             String    @id @default(cuid())
+  orgId          String
+  org            Org       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  workerId       String
+  worker         Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  title          String
+  provider       String?
+  completedAt    DateTime
+  expiresAt      DateTime?
+  certificateUrl String?
+  notes          String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workerId, completedAt])
+  @@index([orgId, expiresAt])
 }
 
 // 24-hour NDIS reportable-incident clock starts at reportedAt (when manager

@@ -51,6 +51,30 @@ export function isSupportWorkerOnly(
   return roles.every((r) => r === "SUPPORT_WORKER");
 }
 
+// Friendly labels per Provider Scene A.
+export const ROLE_LABEL: Record<OrgRole, string> = {
+  OWNER: "Owner",
+  ROSTERING_MANAGER: "Rostering manager",
+  CARE_MANAGER: "Care manager",
+  COMPLIANCE_MANAGER: "Compliance manager",
+  OFFICE_ADMIN: "Office admin",
+  SUPPORT_WORKER: "Support worker",
+  SUPPORT_COORDINATOR: "Support coordinator",
+};
+
+// SC portal roles — Owner counts as a coordinator in same-org hybrids
+// where the boss does both jobs, and in pure-SC orgs the owner is by
+// definition a coordinator. Pure SUPPORT_COORDINATOR users qualify too.
+export const COORDINATOR_ROLES: OrgRole[] = ["OWNER", "SUPPORT_COORDINATOR"];
+
+export function isCoordinator(context: ResolvedPortalContext): boolean {
+  return hasAnyRole(getActiveRoles(context), COORDINATOR_ROLES);
+}
+
+export function assertCoordinator(context: ResolvedPortalContext) {
+  if (!isCoordinator(context)) forbidden();
+}
+
 /**
  * Redirect support-worker-only users away from manager-only routes.
  * Use at the top of any page that should only be accessible to managers.

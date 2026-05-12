@@ -4,11 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   type LucideIcon,
+  Building2,
   CalendarClock,
+  ClipboardCheck,
   ClipboardList,
   HardHat,
   HeartPulse,
   Home,
+  MessageCircle,
   ShieldAlert,
   Users,
   Wallet,
@@ -37,15 +40,19 @@ const PROVIDER_NAV: NavItem[] = [
   { href: "/provider/roster", label: "Roster", icon: CalendarClock },
   { href: "/provider/shifts", label: "Shifts", icon: ClipboardList },
   { href: "/provider/incidents", label: "Incidents", icon: ShieldAlert },
-  { href: "/provider/care-plans", label: "Care plans", icon: HeartPulse, managerOnly: true },
+  { href: "/provider/care-plans", label: "Care plans", icon: HeartPulse },
+  { href: "/provider/reviews", label: "Reviews", icon: ClipboardCheck, managerOnly: true },
 ];
 
 const SC_NAV: NavItem[] = [
   { href: "/sc", label: "Overview", icon: Home },
   { href: "/sc/participants", label: "Participants", icon: Users },
+  { href: "/sc/providers", label: "Providers", icon: Building2 },
   { href: "/sc/budgets", label: "Budgets", icon: Wallet },
-  { href: "/sc/evidence", label: "Evidence", icon: FileText },
   { href: "/sc/escalations", label: "Escalations", icon: AlertTriangle },
+  { href: "/sc/communications", label: "Communications", icon: MessageCircle },
+  { href: "/sc/reviews", label: "Reviews", icon: ClipboardCheck },
+  { href: "/sc/evidence", label: "Evidence", icon: FileText },
 ];
 
 type Props = {

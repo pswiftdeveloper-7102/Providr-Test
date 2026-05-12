@@ -1,10 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
+  AlertOctagon,
+  Brain,
   ExternalLink,
   FileSignature,
   HeartPulse,
+  MessageCircle,
+  Pencil,
+  Phone,
+  Pill,
   Plus,
+  ShieldAlert,
+  Sparkles,
   Wallet,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -109,6 +117,11 @@ export default async function ParticipantDetailPage({
           goals: { orderBy: { createdAt: "asc" } },
         },
       },
+      behaviourSupportPlans: {
+        where: { status: { in: ["DRAFT", "ACTIVE"] } },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
     },
   });
 
@@ -120,6 +133,7 @@ export default async function ParticipantDetailPage({
     participant.serviceAgreements[0] ??
     null;
   const carePlan = participant.carePlans[0] ?? null;
+  const bsp = participant.behaviourSupportPlans[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -416,9 +430,25 @@ export default async function ParticipantDetailPage({
                   </div>
                 </div>
                 <CardAction>
-                  <Badge variant="secondary">
-                    {carePlan.status.toLowerCase()}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {carePlan.status.toLowerCase()}
+                    </Badge>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        render={
+                          <Link
+                            href={`/provider/participants/${participant.id}/care-plan/edit`}
+                          />
+                        }
+                      >
+                        <Pencil />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
                 </CardAction>
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
@@ -427,6 +457,8 @@ export default async function ParticipantDetailPage({
                     {carePlan.summary}
                   </p>
                 )}
+
+                <CarePlanContext carePlan={carePlan} />
 
                 <div>
                   <div className="mb-2 flex items-baseline justify-between">
@@ -512,7 +544,187 @@ export default async function ParticipantDetailPage({
               )}
             </Card>
           )}
+
+          {/* Behaviour Support Plan — separate clinical document, view-only
+              for support workers per Q3 (2026-05-11). */}
+          {!bsp && canEdit && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Brain className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>No Behaviour Support Plan</CardTitle>
+                    <CardDescription>
+                      Add one if the participant&apos;s behaviour support
+                      needs a structured plan. Triggers, de-escalation, and
+                      what NOT to do.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  render={
+                    <Link
+                      href={`/provider/participants/${participant.id}/bsp/new`}
+                    />
+                  }
+                >
+                  <Plus />
+                  Add BSP
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+          {bsp && (
+            <Card>
+              <CardHeader className="border-b">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Brain className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>Behaviour Support Plan</CardTitle>
+                    <CardDescription>
+                      Written by the behaviour support practitioner. Read-only
+                      for support workers.
+                    </CardDescription>
+                  </div>
+                </div>
+                <CardAction>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">
+                      {bsp.status.toLowerCase()}
+                    </Badge>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        render={
+                          <Link
+                            href={`/provider/participants/${participant.id}/bsp/edit`}
+                          />
+                        }
+                      >
+                        <Pencil />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                </CardAction>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                {bsp.summary && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {bsp.summary}
+                  </p>
+                )}
+                <Field
+                  icon={ShieldAlert}
+                  label="Triggers"
+                  value={bsp.triggers}
+                />
+                <Field
+                  icon={Sparkles}
+                  label="De-escalation strategies"
+                  value={bsp.deescalation}
+                />
+                <Field
+                  icon={AlertOctagon}
+                  label="What NOT to do"
+                  value={bsp.whatNotToDo}
+                  emphasised
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CarePlanContext({
+  carePlan,
+}: {
+  carePlan: {
+    communicationPreferences: string | null;
+    medicalConditions: string | null;
+    allergies: string | null;
+    risks: string | null;
+    emergencyContacts: string | null;
+    culturalConsiderations: string | null;
+  };
+}) {
+  const hasAny =
+    carePlan.communicationPreferences ||
+    carePlan.medicalConditions ||
+    carePlan.allergies ||
+    carePlan.risks ||
+    carePlan.emergencyContacts ||
+    carePlan.culturalConsiderations;
+  if (!hasAny) return null;
+
+  return (
+    <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+      <h3 className="text-sm font-semibold">Context for support workers</h3>
+      <Field
+        icon={MessageCircle}
+        label="Communication preferences"
+        value={carePlan.communicationPreferences}
+      />
+      <Field
+        icon={Pill}
+        label="Medical conditions"
+        value={carePlan.medicalConditions}
+      />
+      <Field
+        icon={AlertOctagon}
+        label="Allergies"
+        value={carePlan.allergies}
+        emphasised
+      />
+      <Field icon={ShieldAlert} label="Risks" value={carePlan.risks} />
+      <Field
+        icon={Phone}
+        label="Emergency contacts"
+        value={carePlan.emergencyContacts}
+      />
+      <Field
+        icon={Sparkles}
+        label="Cultural considerations"
+        value={carePlan.culturalConsiderations}
+      />
+    </div>
+  );
+}
+
+function Field({
+  icon: Icon,
+  label,
+  value,
+  emphasised,
+}: {
+  icon: typeof HeartPulse;
+  label: string;
+  value: string | null;
+  emphasised?: boolean;
+}) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-2.5">
+      <Icon
+        className={`mt-0.5 h-4 w-4 shrink-0 ${
+          emphasised ? "text-destructive" : "text-muted-foreground"
+        }`}
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {label}
+        </p>
+        <p className="mt-0.5 text-sm whitespace-pre-wrap">{value}</p>
       </div>
     </div>
   );

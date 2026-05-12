@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AppHeader } from "@/components/app-header";
+import { CoIBanner } from "@/components/coi-banner";
 import { NavSidebar } from "@/components/nav-sidebar";
 import { resolvePortalContext } from "@/lib/session";
 import { isManager } from "@/lib/rbac";
@@ -18,6 +19,10 @@ export async function AppShell({ portal, children }: Props) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
       <AppHeader context={context} />
+      <CoIBanner
+        orgId={context.activeOrg.id}
+        availablePortals={context.availablePortals}
+      />
       <div className="flex flex-1">
         <NavSidebar portal={portal} isManager={managerView} />
         <main className="flex-1 bg-white">

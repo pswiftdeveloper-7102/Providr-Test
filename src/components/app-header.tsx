@@ -1,4 +1,5 @@
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
+import { PortalToggle } from "@/components/portal-toggle";
 import { ProfileDropdown } from "@/components/profile-dropdown";
 import { ProvidrLogo } from "@/components/providr-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -10,11 +11,11 @@ type Props = {
 };
 
 export function AppHeader({ context }: Props) {
-  const { activeOrg, user } = context;
+  const { activeOrg, activePortal, availablePortals, user } = context;
 
   return (
     <header className="border-b bg-background">
-      <div className="flex items-center justify-between gap-4 px-6 py-3">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-3">
         <div className="flex items-center gap-3 min-w-0">
           <ProvidrLogo height={28} />
           <Separator orientation="vertical" className="hidden sm:block h-6" />
@@ -23,7 +24,11 @@ export function AppHeader({ context }: Props) {
           </span>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex justify-center">
+          <PortalToggle active={activePortal} available={availablePortals} />
+        </div>
+
+        <div className="flex items-center justify-end gap-1">
           <NotificationsDropdown />
           <ThemeToggle />
           <ProfileDropdown

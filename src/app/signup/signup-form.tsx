@@ -24,6 +24,7 @@ import {
   BrandedSelectTrigger,
 } from "@/components/branded-select";
 import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { PasswordInput } from "@/components/password-input";
 import { cn } from "@/lib/utils";
 import {
@@ -66,6 +67,20 @@ export function SignupForm({ googleEnabled, onGoogle }: Props) {
   const [abn, setAbn] = useState("");
   const [isNdisRegistered, setIsNdisRegistered] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+
+  // Hybrid fields — does the user also operate the other portal?
+  const [alsoOperatesOther, setAlsoOperatesOther] = useState<"yes" | "no" | "">(
+    ""
+  );
+  const [hybridOrgType, setHybridOrgType] = useState<"SAME" | "SEPARATE" | "">(
+    ""
+  );
+  const [otherCompanyLegalName, setOtherCompanyLegalName] = useState("");
+  const [otherCompanyTradingName, setOtherCompanyTradingName] = useState("");
+  const [otherAbn, setOtherAbn] = useState("");
+
+  const otherPortalLabel =
+    signUpAs === "PROVIDER" ? "Support Coordination" : "Provider services";
 
   const [clientStepErrors, setClientStepErrors] = useState<
     Record<string, string>
@@ -337,16 +352,112 @@ export function SignupForm({ googleEnabled, onGoogle }: Props) {
                   {fieldError("signUpAs")}
                 </p>
               )}
-              <p className="text-xs text-muted-foreground">
-                You can add the other portal later if your organisation does
-                both.
-              </p>
             </div>
+
+            {signUpAs && (
+              <div className="space-y-4 rounded-md border border-dashed bg-muted/30 p-3">
+                <div className="space-y-2">
+                  <Label>
+                    Do you also operate {otherPortalLabel}?
+                    <span className="ml-0.5 text-destructive">*</span>
+                  </Label>
+                  <input
+                    type="hidden"
+                    name="alsoOperatesOther"
+                    value={alsoOperatesOther}
+                  />
+                  <ToggleGroup
+                    value={alsoOperatesOther ? [alsoOperatesOther] : []}
+                    onValueChange={(vals) => {
+                      const v = vals[0];
+                      if (v !== "yes" && v !== "no") return;
+                      setAlsoOperatesOther(v);
+                      markDirty("alsoOperatesOther");
+                      if (v === "no") {
+                        setHybridOrgType("");
+                        setOtherCompanyLegalName("");
+                        setOtherCompanyTradingName("");
+                        setOtherAbn("");
+                      }
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <ToggleGroupItem value="no" className="flex-1">
+                      No, just this one
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="yes" className="flex-1">
+                      Yes, both
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
+
+                {alsoOperatesOther === "yes" && (
+                  <div className="space-y-2">
+                    <Label>
+                      Under the same organisation?
+                      <span className="ml-0.5 text-destructive">*</span>
+                    </Label>
+                    <input
+                      type="hidden"
+                      name="hybridOrgType"
+                      value={hybridOrgType}
+                    />
+                    <ToggleGroup
+                      value={hybridOrgType ? [hybridOrgType] : []}
+                      onValueChange={(vals) => {
+                        const v = vals[0];
+                        if (v !== "SAME" && v !== "SEPARATE") return;
+                        setHybridOrgType(v);
+                        markDirty("hybridOrgType");
+                      }}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <ToggleGroupItem
+                        value="SAME"
+                        className="flex-1 flex-col items-start gap-0 py-2 h-auto"
+                      >
+                        <span className="font-medium">Same company</span>
+                        <span className="text-xs text-muted-foreground font-normal">
+                          One organisation, both portals
+                        </span>
+                      </ToggleGroupItem>
+                      <ToggleGroupItem
+                        value="SEPARATE"
+                        className="flex-1 flex-col items-start gap-0 py-2 h-auto"
+                      >
+                        <span className="font-medium">Separate company</span>
+                        <span className="text-xs text-muted-foreground font-normal">
+                          Two organisations, one portal each
+                        </span>
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                    <p className="text-xs text-muted-foreground">
+                      {hybridOrgType === "SAME"
+                        ? "We'll ask you to sign a Conflict of Interest acknowledgement."
+                        : hybridOrgType === "SEPARATE"
+                          ? "We'll set up both organisations and add you to each."
+                          : ""}
+                    </p>
+                    {fieldError("hybridOrgType") && (
+                      <p className="text-xs text-destructive">
+                        {fieldError("hybridOrgType")}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <Separator />
 
             <FieldShell
-              label="Company legal name"
+              label={
+                alsoOperatesOther === "yes" && hybridOrgType === "SEPARATE"
+                  ? `Company legal name (${signUpAs === "SC" ? "Support Coordination side" : "Provider side"})`
+                  : "Company legal name"
+              }
               required
               error={fieldError("companyLegalName")}
             >
@@ -390,6 +501,57 @@ export function SignupForm({ googleEnabled, onGoogle }: Props) {
                 aria-invalid={!!fieldError("abn")}
               />
             </FieldShell>
+
+            {alsoOperatesOther === "yes" && hybridOrgType === "SEPARATE" && (
+              <div className="space-y-4 rounded-md border border-dashed bg-muted/30 p-3">
+                <p className="text-sm font-medium">
+                  Second company —{" "}
+                  {signUpAs === "SC" ? "Provider side" : "Support Coordination side"}
+                </p>
+                <FieldShell
+                  label="Company legal name"
+                  required
+                  error={fieldError("otherCompanyLegalName")}
+                >
+                  <Input
+                    name="otherCompanyLegalName"
+                    value={otherCompanyLegalName}
+                    onChange={(e) => {
+                      setOtherCompanyLegalName(e.target.value);
+                      markDirty("otherCompanyLegalName");
+                    }}
+                    placeholder="Acme Coordination Pty Ltd"
+                    aria-invalid={!!fieldError("otherCompanyLegalName")}
+                  />
+                </FieldShell>
+                <FieldShell
+                  label="Trading name (optional)"
+                  error={fieldError("otherCompanyTradingName")}
+                >
+                  <Input
+                    name="otherCompanyTradingName"
+                    value={otherCompanyTradingName}
+                    onChange={(e) => {
+                      setOtherCompanyTradingName(e.target.value);
+                      markDirty("otherCompanyTradingName");
+                    }}
+                    placeholder="Acme Coord"
+                  />
+                </FieldShell>
+                <FieldShell label="ABN" error={fieldError("otherAbn")}>
+                  <Input
+                    name="otherAbn"
+                    value={otherAbn}
+                    onChange={(e) => {
+                      setOtherAbn(e.target.value);
+                      markDirty("otherAbn");
+                    }}
+                    placeholder="11 digits"
+                    aria-invalid={!!fieldError("otherAbn")}
+                  />
+                </FieldShell>
+              </div>
+            )}
 
             <Separator />
 

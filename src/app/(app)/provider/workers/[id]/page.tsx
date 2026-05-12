@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { requireManager } from "@/lib/rbac";
 
+import { TrainingSection } from "./training-section";
 import { WorkerEditForm } from "./worker-edit-form";
 
 export default async function WorkerDetailPage({
@@ -17,6 +18,11 @@ export default async function WorkerDetailPage({
 
   const worker = await db.worker.findFirst({
     where: { id, orgId: context.activeOrg.id },
+    include: {
+      trainingRecords: {
+        orderBy: { completedAt: "desc" },
+      },
+    },
   });
   if (!worker) notFound();
 
@@ -42,6 +48,8 @@ export default async function WorkerDetailPage({
           firstAidExpiry: worker.firstAidExpiry,
         }}
       />
+
+      <TrainingSection workerId={worker.id} records={worker.trainingRecords} />
     </div>
   );
 }
