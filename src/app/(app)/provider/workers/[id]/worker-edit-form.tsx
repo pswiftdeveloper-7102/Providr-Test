@@ -233,7 +233,7 @@ function CertRow({
       </div>
       <div className="flex items-center gap-2 text-muted-foreground">
         <span className="text-xs">
-          {expiry ? format(expiry, "d MMM yyyy") : "Not set"}
+          {expiry ? format(expiry, "dd/MM/yyyy") : "Not set"}
         </span>
         <Badge variant={status === "expired" ? "destructive" : "outline"}>
           {CERT_LABEL[status]}

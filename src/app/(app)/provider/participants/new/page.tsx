@@ -83,6 +83,8 @@ export default function NewParticipantPage() {
                 id="dateOfBirth"
                 label="Date of birth"
                 type="date"
+                max={todayLocalDate()}
+                helperText="dd/mm/yyyy — can't be in the future"
                 error={state.fieldErrors?.dateOfBirth}
               />
               <Field
@@ -127,9 +129,20 @@ type FieldProps = {
   placeholder?: string;
   required?: boolean;
   error?: string;
+  max?: string;
+  helperText?: string;
 };
 
-function Field({ id, label, type, placeholder, required, error }: FieldProps) {
+function Field({
+  id,
+  label,
+  type,
+  placeholder,
+  required,
+  error,
+  max,
+  helperText,
+}: FieldProps) {
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>
@@ -143,8 +156,18 @@ function Field({ id, label, type, placeholder, required, error }: FieldProps) {
         placeholder={placeholder}
         required={required}
         aria-invalid={!!error}
+        max={max}
       />
+      {helperText && !error && (
+        <p className="text-xs text-muted-foreground">{helperText}</p>
+      )}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
+}
+
+function todayLocalDate(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

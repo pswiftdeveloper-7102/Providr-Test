@@ -75,6 +75,8 @@ export default function NewSCParticipantPage() {
                 name="dateOfBirth"
                 label="Date of birth"
                 type="date"
+                max={todayLocalDate()}
+                helperText="dd/mm/yyyy — can't be in the future"
                 error={state.fieldErrors?.dateOfBirth}
               />
             </div>
@@ -135,6 +137,8 @@ function Field({
   required,
   error,
   placeholder,
+  max,
+  helperText,
 }: {
   name: string;
   label: string;
@@ -142,6 +146,8 @@ function Field({
   required?: boolean;
   error?: string;
   placeholder?: string;
+  max?: string;
+  helperText?: string;
 }) {
   return (
     <div className="space-y-2">
@@ -156,8 +162,18 @@ function Field({
         placeholder={placeholder}
         aria-invalid={!!error}
         required={required}
+        max={max}
       />
+      {helperText && !error && (
+        <p className="text-xs text-muted-foreground">{helperText}</p>
+      )}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
+}
+
+function todayLocalDate(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

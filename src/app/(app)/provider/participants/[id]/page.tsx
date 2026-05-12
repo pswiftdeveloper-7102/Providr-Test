@@ -170,14 +170,14 @@ export default async function ParticipantDetailPage({
               label="Date of birth"
               value={
                 participant.dateOfBirth
-                  ? format(participant.dateOfBirth, "d MMM yyyy")
+                  ? format(participant.dateOfBirth, "dd/MM/yyyy")
                   : null
               }
             />
             <Separator />
             <ContactRow
               label="Added"
-              value={format(participant.createdAt, "d MMM yyyy")}
+              value={format(participant.createdAt, "dd/MM/yyyy")}
             />
           </CardContent>
         </Card>
@@ -188,8 +188,8 @@ export default async function ParticipantDetailPage({
               <CardHeader className="border-b">
                 <CardTitle>Active NDIS plan</CardTitle>
                 <CardDescription>
-                  {format(activePlan.startDate, "d MMM yyyy")} —{" "}
-                  {format(activePlan.endDate, "d MMM yyyy")}
+                  {format(activePlan.startDate, "dd/MM/yyyy")} —{" "}
+                  {format(activePlan.endDate, "dd/MM/yyyy")}
                   {activePlan.ndisPlanNumber && (
                     <span className="ml-2 text-muted-foreground">
                       · {activePlan.ndisPlanNumber}
@@ -286,8 +286,8 @@ export default async function ParticipantDetailPage({
                       className="flex items-center justify-between"
                     >
                       <span>
-                        {format(p.startDate, "d MMM yyyy")} –{" "}
-                        {format(p.endDate, "d MMM yyyy")}
+                        {format(p.startDate, "dd/MM/yyyy")} –{" "}
+                        {format(p.endDate, "dd/MM/yyyy")}
                       </span>
                       <Badge variant="outline">{p.status.toLowerCase()}</Badge>
                     </div>
@@ -307,9 +307,9 @@ export default async function ParticipantDetailPage({
                   <div>
                     <CardTitle>Service agreement</CardTitle>
                     <CardDescription>
-                      {format(activeAgreement.startDate, "d MMM yyyy")}
+                      {format(activeAgreement.startDate, "dd/MM/yyyy")}
                       {activeAgreement.endDate &&
-                        ` – ${format(activeAgreement.endDate, "d MMM yyyy")}`}
+                        ` – ${format(activeAgreement.endDate, "dd/MM/yyyy")}`}
                     </CardDescription>
                   </div>
                 </div>
@@ -328,7 +328,7 @@ export default async function ParticipantDetailPage({
                   <span className="text-muted-foreground">Signed</span>
                   <span className="text-right">
                     {activeAgreement.signedAt
-                      ? format(activeAgreement.signedAt, "d MMM yyyy")
+                      ? format(activeAgreement.signedAt, "dd/MM/yyyy")
                       : "Not yet"}
                   </span>
                 </div>
@@ -420,9 +420,9 @@ export default async function ParticipantDetailPage({
                     <CardTitle>Care plan</CardTitle>
                     <CardDescription>
                       {carePlan.effectiveFrom
-                        ? `${format(carePlan.effectiveFrom, "d MMM yyyy")}${
+                        ? `${format(carePlan.effectiveFrom, "dd/MM/yyyy")}${
                             carePlan.effectiveTo
-                              ? ` – ${format(carePlan.effectiveTo, "d MMM yyyy")}`
+                              ? ` – ${format(carePlan.effectiveTo, "dd/MM/yyyy")}`
                               : ""
                           }`
                         : "No dates set"}
@@ -500,7 +500,7 @@ export default async function ParticipantDetailPage({
                           )}
                           {g.targetDate && (
                             <p className="mt-1 text-xs text-muted-foreground">
-                              Target: {format(g.targetDate, "d MMM yyyy")}
+                              Target: {format(g.targetDate, "dd/MM/yyyy")}
                             </p>
                           )}
                         </li>

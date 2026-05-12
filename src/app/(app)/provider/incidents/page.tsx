@@ -114,7 +114,7 @@ export default async function IncidentsListPage() {
                         {incident.participant?.lastName}
                       </span>
                       <span className="text-xs font-normal text-muted-foreground">
-                        · occurred {format(incident.occurredAt, "d MMM h:mm a")}
+                        · occurred {format(incident.occurredAt, "dd/MM h:mm a")}
                       </span>
                     </AlertTitle>
                     <AlertDescription>
@@ -183,7 +183,7 @@ export default async function IncidentsListPage() {
                         href={`/provider/incidents/${incident.id}`}
                         className="text-sm font-medium hover:underline"
                       >
-                        {format(incident.occurredAt, "d MMM yyyy h:mm a")}
+                        {format(incident.occurredAt, "dd/MM/yyyy h:mm a")}
                       </Link>
                     </TableCell>
                     <TableCell className="text-sm">

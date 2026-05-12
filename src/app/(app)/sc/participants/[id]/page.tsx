@@ -213,7 +213,7 @@ export default async function SCParticipantDetailPage({
               label="DOB"
               value={
                 participant.dateOfBirth
-                  ? format(participant.dateOfBirth, "d MMM yyyy")
+                  ? format(participant.dateOfBirth, "dd/MM/yyyy")
                   : null
               }
             />
@@ -233,8 +233,8 @@ export default async function SCParticipantDetailPage({
                   <div>
                     <CardTitle>Active NDIS plan</CardTitle>
                     <CardDescription>
-                      {format(activePlan.startDate, "d MMM yyyy")} —{" "}
-                      {format(activePlan.endDate, "d MMM yyyy")}
+                      {format(activePlan.startDate, "dd/MM/yyyy")} —{" "}
+                      {format(activePlan.endDate, "dd/MM/yyyy")}
                       {activePlan.ndisPlanNumber && (
                         <span className="ml-2 text-muted-foreground">
                           · {activePlan.ndisPlanNumber}
@@ -389,7 +389,7 @@ export default async function SCParticipantDetailPage({
                               {l.channel.toLowerCase().replace("_", " ")}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                              {format(l.occurredAt, "d MMM h:mm a")}
+                              {format(l.occurredAt, "dd/MM h:mm a")}
                             </span>
                           </div>
                         </div>
@@ -599,7 +599,7 @@ export default async function SCParticipantDetailPage({
                           <div className="text-xs text-muted-foreground">
                             {s.providerName ? `${s.providerName} · ` : ""}
                             {BUCKET_LABEL[s.planBudget.category as keyof typeof BUCKET_LABEL]} ·{" "}
-                            {format(s.occurredAt, "d MMM yyyy")}
+                            {format(s.occurredAt, "dd/MM/yyyy")}
                           </div>
                         </div>
                         <span className="text-sm font-medium">

@@ -48,7 +48,7 @@ export function NdisSubmissionControls({
             <span>
               Marked as submitted on{" "}
               <strong>
-                {format(reportedToNdisAt, "EEE d MMM yyyy 'at' h:mm a")}
+                {format(reportedToNdisAt, "EEE, dd/MM/yyyy 'at' h:mm a")}
               </strong>
               .
             </span>

@@ -84,7 +84,7 @@ export default async function ConflictOfInterestPage() {
             <CardDescription>
               Recorded{" "}
               {form?.signedAt
-                ? format(form.signedAt, "d MMM yyyy 'at' h:mm a")
+                ? format(form.signedAt, "dd/MM/yyyy 'at' h:mm a")
                 : ""}
               .
             </CardDescription>

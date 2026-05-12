@@ -364,7 +364,7 @@ export default async function ProviderHome() {
               Today
             </p>
             <p className="text-sm font-medium">
-              {format(now, "EEEE d MMM yyyy")}
+              {format(now, "EEEE, dd/MM/yyyy")}
             </p>
           </div>
           <Button

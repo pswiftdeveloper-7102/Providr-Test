@@ -134,7 +134,7 @@ export default async function SCParticipantsPage() {
                                 : ""
                             }
                           >
-                            {format(plan.endDate, "d MMM yyyy")}
+                            {format(plan.endDate, "dd/MM/yyyy")}
                             {daysToEnd !== null && daysToEnd >= 0 && (
                               <span className="ml-1 text-xs text-muted-foreground">
                                 ({daysToEnd}d)

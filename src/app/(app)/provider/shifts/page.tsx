@@ -31,9 +31,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 function dayHeading(d: Date): string {
-  if (isToday(d)) return `Today · ${format(d, "EEE d MMM")}`;
-  if (isYesterday(d)) return `Yesterday · ${format(d, "EEE d MMM")}`;
-  return format(d, "EEE d MMM yyyy");
+  if (isToday(d)) return `Today · ${format(d, "EEE, dd/MM")}`;
+  if (isYesterday(d)) return `Yesterday · ${format(d, "EEE, dd/MM")}`;
+  return format(d, "EEE, dd/MM/yyyy");
 }
 
 function dateKey(d: Date): string {

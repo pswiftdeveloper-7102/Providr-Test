@@ -123,7 +123,7 @@ export default async function ShiftDetailPage({
             {shift.participant.firstName} {shift.participant.lastName}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {format(shift.scheduledStart, "EEE d MMM yyyy")} ·{" "}
+            {format(shift.scheduledStart, "EEE, dd/MM/yyyy")} ·{" "}
             {format(shift.scheduledStart, "h:mm a")} –{" "}
             {format(shift.scheduledEnd, "h:mm a")}
           </p>

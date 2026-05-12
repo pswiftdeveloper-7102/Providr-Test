@@ -136,7 +136,7 @@ export default async function SCBudgetsPage() {
                       {r.participantName}
                     </Link>
                     <div className="text-xs text-muted-foreground">
-                      Plan ends {format(r.endDate, "d MMM yyyy")}
+                      Plan ends {format(r.endDate, "dd/MM/yyyy")}
                       <span className="ml-1">
                         ({r.daysToEnd}d · {Math.round(r.timeElapsedPct)}%
                         elapsed)

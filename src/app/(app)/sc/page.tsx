@@ -162,7 +162,7 @@ export default async function SCHome() {
               Today
             </p>
             <p className="text-sm font-medium">
-              {format(now, "EEEE d MMM yyyy")}
+              {format(now, "EEEE, dd/MM/yyyy")}
             </p>
           </div>
           <Button
@@ -343,7 +343,7 @@ export default async function SCHome() {
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {ESCALATION_TYPE_LABEL[e.type]} ·{" "}
-                            {format(e.openedAt, "d MMM")}
+                            {format(e.openedAt, "dd/MM")}
                           </div>
                         </div>
                         <ArrowRight className="h-4 w-4 text-muted-foreground" />

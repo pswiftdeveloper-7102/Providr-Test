@@ -151,7 +151,7 @@ export default async function EscalationsPage() {
                           {TYPE_LABEL[e.type]}
                         </Badge>
                         <span className="text-xs text-muted-foreground">
-                          {e.resolvedAt && format(e.resolvedAt, "d MMM yyyy")}
+                          {e.resolvedAt && format(e.resolvedAt, "dd/MM/yyyy")}
                         </span>
                       </div>
                     </div>

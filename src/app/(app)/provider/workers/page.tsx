@@ -168,7 +168,7 @@ function CertCell({
         : "text-muted-foreground";
   return (
     <span className={`text-xs ${tone}`}>
-      {expiry ? format(expiry, "d MMM yyyy") : "—"}
+      {expiry ? format(expiry, "dd/MM/yyyy") : "—"}
     </span>
   );
 }

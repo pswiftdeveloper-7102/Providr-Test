@@ -84,7 +84,7 @@ export default async function EscalationDetailPage({
             </Link>
             {" · "}
             opened {days === 0 ? "today" : `${days}d ago`} ·{" "}
-            {format(escalation.openedAt, "d MMM yyyy h:mm a")}
+            {format(escalation.openedAt, "dd/MM/yyyy h:mm a")}
           </p>
         </div>
         <Badge variant={STATUS_VARIANT[escalation.status]}>
@@ -132,7 +132,7 @@ export default async function EscalationDetailPage({
             <CardDescription>
               Closed{" "}
               {escalation.resolvedAt
-                ? format(escalation.resolvedAt, "d MMM yyyy h:mm a")
+                ? format(escalation.resolvedAt, "dd/MM/yyyy h:mm a")
                 : ""}
               .
             </CardDescription>

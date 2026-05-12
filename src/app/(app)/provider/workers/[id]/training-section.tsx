@@ -155,9 +155,9 @@ export function TrainingSection({
                           </Badge>
                         )}
                         <span className="text-xs text-muted-foreground">
-                          {format(r.completedAt, "d MMM yyyy")}
+                          {format(r.completedAt, "dd/MM/yyyy")}
                           {r.expiresAt &&
-                            ` → ${format(r.expiresAt, "d MMM yyyy")}`}
+                            ` → ${format(r.expiresAt, "dd/MM/yyyy")}`}
                         </span>
                         <form action={deleteTrainingAction.bind(null, r.id)}>
                           <Button

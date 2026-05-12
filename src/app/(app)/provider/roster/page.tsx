@@ -135,7 +135,7 @@ export default async function RosterPage({
                         isCurrent && "text-primary"
                       )}
                     >
-                      {format(day, "EEE d MMM")}
+                      {format(day, "EEE, dd/MM")}
                     </h3>
                     {isCurrent && (
                       <span className="text-xs text-primary">Today</span>

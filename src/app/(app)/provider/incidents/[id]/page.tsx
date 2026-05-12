@@ -161,7 +161,7 @@ export default async function IncidentDetailPage({
               >
                 {incident.shift.worker.firstName}{" "}
                 {incident.shift.worker.lastName} ·{" "}
-                {format(incident.shift.scheduledStart, "d MMM h:mm a")}
+                {format(incident.shift.scheduledStart, "dd/MM h:mm a")}
               </Link>
             ) : (
               <span className="text-muted-foreground">No shift linked</span>
@@ -169,7 +169,7 @@ export default async function IncidentDetailPage({
           </Row>
           <Row label="Reported at (24h clock start)">
             {incident.reportedAt
-              ? format(incident.reportedAt, "d MMM yyyy h:mm a")
+              ? format(incident.reportedAt, "dd/MM/yyyy h:mm a")
               : "—"}
           </Row>
         </CardContent>

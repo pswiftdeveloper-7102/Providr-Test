@@ -260,7 +260,7 @@ export default async function AuditPackPage({
           <div className="flex items-center justify-between">
             <ProvidrLogo height={28} />
             <span className="text-xs text-muted-foreground">
-              Generated {format(now, "d MMM yyyy, h:mm a")}
+              Generated {format(now, "dd/MM/yyyy, h:mm a")}
             </span>
           </div>
           <div className="mt-4">
@@ -269,7 +269,7 @@ export default async function AuditPackPage({
             </p>
             <h2 className="text-xl font-semibold">{orgName}</h2>
             <p className="text-sm text-muted-foreground">
-              {format(from, "d MMM yyyy")} – {format(to, "d MMM yyyy")} (
+              {format(from, "dd/MM/yyyy")} – {format(to, "dd/MM/yyyy")} (
               {formatDistanceStrict(from, to)})
             </p>
           </div>
@@ -351,12 +351,12 @@ export default async function AuditPackPage({
                     </TableCell>
                     <TableCell className="text-xs">
                       {w.ndisWorkerCheckExpiry
-                        ? format(w.ndisWorkerCheckExpiry, "d MMM yyyy")
+                        ? format(w.ndisWorkerCheckExpiry, "dd/MM/yyyy")
                         : "—"}
                     </TableCell>
                     <TableCell className="text-xs">
                       {w.firstAidExpiry
-                        ? format(w.firstAidExpiry, "d MMM yyyy")
+                        ? format(w.firstAidExpiry, "dd/MM/yyyy")
                         : "—"}
                     </TableCell>
                     <TableCell>
@@ -410,7 +410,7 @@ export default async function AuditPackPage({
                   return (
                     <TableRow key={i.id}>
                       <TableCell className="text-xs">
-                        {format(i.occurredAt, "d MMM yyyy h:mm a")}
+                        {format(i.occurredAt, "dd/MM/yyyy h:mm a")}
                       </TableCell>
                       <TableCell className="text-xs">
                         {i.participant?.firstName} {i.participant?.lastName}
@@ -464,13 +464,13 @@ export default async function AuditPackPage({
                       {a.participant.firstName} {a.participant.lastName}
                     </TableCell>
                     <TableCell className="text-xs">
-                      {format(a.startDate, "d MMM yyyy")}
+                      {format(a.startDate, "dd/MM/yyyy")}
                       {a.endDate &&
-                        ` – ${format(a.endDate, "d MMM yyyy")}`}
+                        ` – ${format(a.endDate, "dd/MM/yyyy")}`}
                     </TableCell>
                     <TableCell className="text-xs">
                       {a.signedAt
-                        ? format(a.signedAt, "d MMM yyyy")
+                        ? format(a.signedAt, "dd/MM/yyyy")
                         : "Not yet"}
                     </TableCell>
                     <TableCell className="text-xs">
@@ -566,7 +566,7 @@ export default async function AuditPackPage({
                 {shifts.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="text-xs">
-                      {format(s.scheduledStart, "d MMM h:mm a")}
+                      {format(s.scheduledStart, "dd/MM h:mm a")}
                     </TableCell>
                     <TableCell className="text-xs">
                       {s.worker.firstName} {s.worker.lastName}
@@ -585,7 +585,7 @@ export default async function AuditPackPage({
         </section>
 
         <div className="pt-6 text-center text-xs text-muted-foreground print:pt-2">
-          End of pack — {format(now, "d MMM yyyy, h:mm a")}
+          End of pack — {format(now, "dd/MM/yyyy, h:mm a")}
         </div>
       </div>
 

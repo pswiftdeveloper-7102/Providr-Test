@@ -146,7 +146,7 @@ export default async function StatementPage({
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Spend across all providers for the month. Compiled{" "}
-          {format(now, "d MMM yyyy")}.
+          {format(now, "dd/MM/yyyy")}.
         </p>
       </header>
 
@@ -232,7 +232,7 @@ export default async function StatementPage({
                     <div className="text-xs text-muted-foreground">
                       {s.providerName ? `${s.providerName} · ` : ""}
                       {BUCKET_LABEL[s.planBudget.category]} ·{" "}
-                      {format(s.occurredAt, "d MMM yyyy")}
+                      {format(s.occurredAt, "dd/MM/yyyy")}
                     </div>
                   </div>
                   <span className="font-medium">

@@ -85,7 +85,7 @@ export default async function SCEvidencePage() {
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {plan
-                            ? `Plan ends ${format(plan.endDate, "d MMM yyyy")}`
+                            ? `Plan ends ${format(plan.endDate, "dd/MM/yyyy")}`
                             : "No active plan"}
                           {" · "}
                           {p._count.engagements} engagement

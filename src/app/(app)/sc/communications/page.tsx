@@ -98,7 +98,7 @@ export default async function SCCommunicationsPage() {
                         {CHANNEL_LABEL[l.channel]}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {format(l.occurredAt, "d MMM h:mm a")}
+                        {format(l.occurredAt, "dd/MM h:mm a")}
                       </span>
                       <form
                         action={deleteCommunicationAction.bind(null, l.id)}

@@ -176,7 +176,7 @@ export default async function ProviderDetailPage({
                             {e.participant.firstName} {e.participant.lastName}
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            since {format(e.createdAt, "d MMM yyyy")}
+                            since {format(e.createdAt, "dd/MM/yyyy")}
                           </div>
                         </div>
                         <Badge

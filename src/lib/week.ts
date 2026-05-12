@@ -27,9 +27,9 @@ export function formatWeekRange(week: WeekRange): string {
   const sameYear =
     week.start.getFullYear() === week.end.getFullYear();
   if (sameYear) {
-    return `${format(week.start, "d MMM")} – ${format(week.end, "d MMM yyyy")}`;
+    return `${format(week.start, "dd/MM")} – ${format(week.end, "dd/MM/yyyy")}`;
   }
-  return `${format(week.start, "d MMM yyyy")} – ${format(week.end, "d MMM yyyy")}`;
+  return `${format(week.start, "dd/MM/yyyy")} – ${format(week.end, "dd/MM/yyyy")}`;
 }
 
 export function shiftWeek(refDate: Date, delta: number): Date {

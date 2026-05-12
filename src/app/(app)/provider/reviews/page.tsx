@@ -202,7 +202,7 @@ function Section({
                         {r.dueAt && (
                           <>
                             <span className="mx-1.5">·</span>
-                            {format(r.dueAt, "d MMM yyyy")}
+                            {format(r.dueAt, "dd/MM/yyyy")}
                           </>
                         )}
                       </div>

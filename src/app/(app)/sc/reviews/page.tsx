@@ -210,8 +210,8 @@ function PhaseSection({
                         {r.participantName}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {format(r.startDate, "d MMM yyyy")} →{" "}
-                        {format(r.endDate, "d MMM yyyy")} ·{" "}
+                        {format(r.startDate, "dd/MM/yyyy")} →{" "}
+                        {format(r.endDate, "dd/MM/yyyy")} ·{" "}
                         {Math.round(r.pctElapsed)}% elapsed ·{" "}
                         {r.daysToEnd >= 0
                           ? `${r.daysToEnd}d to end`

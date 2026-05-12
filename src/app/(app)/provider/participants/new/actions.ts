@@ -15,7 +15,22 @@ const createParticipantSchema = z.object({
   pronouns: z.string().trim().optional().or(z.literal("")),
   email: z.string().trim().email("Invalid email").optional().or(z.literal("")),
   phone: z.string().trim().optional().or(z.literal("")),
-  dateOfBirth: z.string().trim().optional().or(z.literal("")),
+  // Belt-and-braces on top of the `max` attribute on the input — server
+  // never trusts the client.
+  dateOfBirth: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .refine(
+      (s) => {
+        if (!s) return true;
+        const d = new Date(s);
+        if (Number.isNaN(d.getTime())) return false;
+        return d <= new Date();
+      },
+      { message: "Date of birth can't be in the future." }
+    ),
 });
 
 export type CreateParticipantState = {

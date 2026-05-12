@@ -52,7 +52,7 @@ export function LiveIncidentClock({
         <CheckCircle2 />
         <AlertTitle>Submitted on time</AlertTitle>
         <AlertDescription>
-          Submitted to NDIS at {format(submittedAt, "d MMM h:mm a")} — inside
+          Submitted to NDIS at {format(submittedAt, "dd/MM h:mm a")} — inside
           the 24-hour window.
         </AlertDescription>
       </Alert>
@@ -61,8 +61,8 @@ export function LiveIncidentClock({
         <AlertTriangle />
         <AlertTitle>Submitted late</AlertTitle>
         <AlertDescription>
-          Submitted to NDIS at {format(submittedAt, "d MMM h:mm a")}, past the
-          deadline of {format(deadline, "d MMM h:mm a")}.
+          Submitted to NDIS at {format(submittedAt, "dd/MM h:mm a")}, past the
+          deadline of {format(deadline, "dd/MM h:mm a")}.
         </AlertDescription>
       </Alert>
     );
@@ -91,7 +91,7 @@ export function LiveIncidentClock({
           {formatDuration(remainingMs)}
         </span>{" "}
         remaining to submit. Deadline:{" "}
-        {format(deadline, "EEE d MMM, h:mm a")}.
+        {format(deadline, "EEE, dd/MM, h:mm a")}.
       </AlertDescription>
     </Alert>
   );

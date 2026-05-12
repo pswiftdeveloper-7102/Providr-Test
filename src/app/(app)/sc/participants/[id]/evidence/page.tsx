@@ -129,7 +129,7 @@ export default async function ParticipantEvidencePage({
           {participant.ndisNumber
             ? `NDIS #${participant.ndisNumber} · `
             : ""}
-          Compiled {format(now, "d MMM yyyy")}
+          Compiled {format(now, "dd/MM/yyyy")}
         </p>
       </header>
 
@@ -141,8 +141,8 @@ export default async function ParticipantEvidencePage({
               <CardTitle>The plan we worked from</CardTitle>
             </div>
             <CardDescription>
-              {format(plan.startDate, "d MMM yyyy")} —{" "}
-              {format(plan.endDate, "d MMM yyyy")} · total{" "}
+              {format(plan.startDate, "dd/MM/yyyy")} —{" "}
+              {format(plan.endDate, "dd/MM/yyyy")} · total{" "}
               {formatCents(plan.totalCents)}
             </CardDescription>
           </CardHeader>
@@ -246,8 +246,8 @@ export default async function ParticipantEvidencePage({
                     </p>
                   )}
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {e.startedAt && `Started ${format(e.startedAt, "d MMM yyyy")}`}
-                    {e.endedAt && ` · ended ${format(e.endedAt, "d MMM yyyy")}`}
+                    {e.startedAt && `Started ${format(e.startedAt, "dd/MM/yyyy")}`}
+                    {e.endedAt && ` · ended ${format(e.endedAt, "dd/MM/yyyy")}`}
                   </p>
                 </li>
               ))}
@@ -282,7 +282,7 @@ export default async function ParticipantEvidencePage({
                     <div className="font-medium">{s.description}</div>
                     <div className="text-xs text-muted-foreground">
                       {s.providerName ? `${s.providerName} · ` : ""}
-                      {format(s.occurredAt, "d MMM yyyy")}
+                      {format(s.occurredAt, "dd/MM/yyyy")}
                     </div>
                   </div>
                   <span className="font-medium">
@@ -323,9 +323,9 @@ export default async function ParticipantEvidencePage({
                       {ESCALATION_TYPE_LABEL[esc.type]}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      {format(esc.openedAt, "d MMM yyyy")}
+                      {format(esc.openedAt, "dd/MM/yyyy")}
                       {esc.resolvedAt &&
-                        ` → resolved ${format(esc.resolvedAt, "d MMM")}`}
+                        ` → resolved ${format(esc.resolvedAt, "dd/MM")}`}
                     </span>
                   </div>
                   <p className="mt-1 text-xs whitespace-pre-wrap">
