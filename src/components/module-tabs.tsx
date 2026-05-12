@@ -1,102 +1,82 @@
-import Link from "next/link";
-import {
-  ArrowRight,
-  CalendarClock,
-  type LucideIcon,
-  Network,
-  ShieldAlert,
-} from "lucide-react";
+"use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { cn } from "@/lib/utils";
 import type { PortalKey } from "@/lib/portal";
 
 type Tab = {
+  key: "incident" | "rostering";
   href: string;
   label: string;
-  description: string;
-  icon: LucideIcon;
+  // URL prefixes that mark this tab as "active". The dashboard itself
+  // doesn't match any prefix, so neither tab is selected there.
+  match: string[];
 };
 
-// Two top-level entry points the client asked to surface on each
-// portal's dashboard. The sidebar still owns the full nav — these are
-// quick-access cards for the two highest-frequency surfaces.
 const TABS: Record<PortalKey, Tab[]> = {
   provider: [
     {
+      key: "incident",
       href: "/provider/incidents",
       label: "Incident Management",
-      description:
-        "Log, track, and submit reportable incidents. NDIS 24-hour clock built in.",
-      icon: ShieldAlert,
+      match: ["/provider/incidents"],
     },
     {
+      key: "rostering",
       href: "/provider/roster",
       label: "Rostering",
-      description:
-        "Match workers to participants, check certs, manage today's shifts.",
-      icon: CalendarClock,
+      match: ["/provider/roster", "/provider/shifts"],
     },
   ],
   sc: [
     {
+      key: "incident",
       href: "/sc/escalations",
       label: "Incident Management",
-      description:
-        "Open escalations across your participants — provider drops, hospital, plan breaches.",
-      icon: ShieldAlert,
+      match: ["/sc/escalations"],
     },
     {
+      key: "rostering",
       href: "/sc/participants",
       label: "Coordination",
-      description:
-        "Manage participants, plans, engaged providers, and budget utilisation.",
-      icon: Network,
+      match: ["/sc/participants", "/sc/providers"],
     },
   ],
-  // Worker portal doesn't surface these — it has its own mobile shell.
   worker: [],
 };
 
 export function ModuleTabs({ portal }: { portal: PortalKey }) {
+  const pathname = usePathname();
   const tabs = TABS[portal];
   if (tabs.length === 0) return null;
+
   return (
-    <section
+    <div
+      role="tablist"
       aria-label="Quick access"
-      className="grid gap-3 sm:grid-cols-2"
+      className="inline-flex rounded-lg border bg-card p-1 shadow-sm"
     >
-      {tabs.map((t) => {
-        const Icon = t.icon;
+      {tabs.map((tab) => {
+        const isActive = tab.match.some((m) => pathname.startsWith(m));
         return (
-          <Link key={t.href} href={t.href} className="block">
-            <Card className="h-full transition-colors hover:bg-muted/40">
-              <CardHeader>
-                <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <CardTitle>{t.label}</CardTitle>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <CardDescription className="mt-1">
-                      {t.description}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent />
-            </Card>
+          <Link
+            key={tab.key}
+            href={tab.href}
+            role="tab"
+            aria-selected={isActive}
+            className={cn(
+              "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
+              isActive
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {tab.label}
           </Link>
         );
       })}
-    </section>
+    </div>
   );
 }
