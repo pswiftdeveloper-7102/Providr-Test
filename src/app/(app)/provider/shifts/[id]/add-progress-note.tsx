@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
+import { FormError } from "@/components/form-error";
 
 import { addProgressNoteAction, type AddNoteState } from "./actions";
 
@@ -52,11 +53,7 @@ export function AddProgressNoteForm({ shiftId }: { shiftId: string }) {
         End-of-shift handover (briefs the next worker)
       </label>
 
-      {state.error && (
-        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.error}
-        </div>
-      )}
+      <FormError message={state.error} />
       <div className="flex justify-end">
         <Button type="submit" size="sm" disabled={pending}>
           {pending ? "Saving…" : isHandover ? "Save handover" : "Add note"}

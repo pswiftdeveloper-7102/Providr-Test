@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { FormError } from "@/components/form-error";
 import {
   CERT_LABEL,
   certStatus,
@@ -144,11 +145,7 @@ export function WorkerEditForm({ worker }: { worker: WorkerData }) {
               />
             </div>
 
-            {state.error && (
-              <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {state.error}
-              </div>
-            )}
+            <FormError message={state.error} />
             {state.ok && (
               <div className="rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
                 Saved.

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { FormError } from "@/components/form-error";
 
 import {
   quickLogIncidentAction,
@@ -78,11 +79,7 @@ export function QuickLogIncidentForm({
         )}
       </div>
 
-      {state.error && (
-        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.error}
-        </div>
-      )}
+      <FormError message={state.error} />
 
       <div className="flex items-center justify-between gap-2">
         <Link

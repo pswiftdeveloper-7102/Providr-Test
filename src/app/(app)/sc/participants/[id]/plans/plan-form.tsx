@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { FormError } from "@/components/form-error";
 import { dollarsToCents, formatCents } from "@/lib/utils";
 
 import {
@@ -204,11 +205,7 @@ export function PlanForm({
         </CardContent>
       </Card>
 
-      {state.error && (
-        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.error}
-        </div>
-      )}
+      <FormError message={state.error} />
 
       <div className="flex items-center justify-end gap-2">
         <Button variant="ghost" render={<Link href={cancelHref} />}>

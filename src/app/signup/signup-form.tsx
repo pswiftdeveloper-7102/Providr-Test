@@ -25,6 +25,7 @@ import {
 } from "@/components/branded-select";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { FormError } from "@/components/form-error";
 import { PasswordInput } from "@/components/password-input";
 import { cn } from "@/lib/utils";
 import {
@@ -612,11 +613,7 @@ export function SignupForm({ googleEnabled, onGoogle }: Props) {
             </div>
           </div>
 
-          {state.error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {state.error}
-            </div>
-          )}
+          <FormError message={state.error} />
         </CardContent>
 
         <CardContent className="pt-0">

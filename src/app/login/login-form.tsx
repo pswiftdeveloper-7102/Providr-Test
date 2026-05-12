@@ -6,6 +6,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FormError } from "@/components/form-error";
 import { PasswordInput } from "@/components/password-input";
 
 import { loginAction, type LoginState } from "./actions";
@@ -70,11 +71,7 @@ export function LoginForm({ googleEnabled, onGoogle }: Props) {
           )}
         </div>
 
-        {state.error && (
-          <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-            {state.error}
-          </div>
-        )}
+        <FormError message={state.error} />
 
         <Button
           type="submit"

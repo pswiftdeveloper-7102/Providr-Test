@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { FormError } from "@/components/form-error";
 
 import { createIncidentAction } from "../actions";
 import type { CreateIncidentState } from "../actions";
@@ -281,11 +282,7 @@ export function NewIncidentForm({
             )}
           </div>
 
-          {state.error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {state.error}
-            </div>
-          )}
+          <FormError message={state.error} />
 
           <div className="flex items-center justify-end gap-2 pt-2">
             <Button

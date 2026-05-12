@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { FormError } from "@/components/form-error";
 
 import {
   createEngagementAction,
@@ -160,11 +161,7 @@ export function EngagementForm({
             />
           </div>
 
-          {state.error && (
-            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {state.error}
-            </div>
-          )}
+          <FormError message={state.error} />
 
           <div className="flex items-center justify-end gap-2">
             <Button variant="ghost" render={<Link href={cancelHref} />}>

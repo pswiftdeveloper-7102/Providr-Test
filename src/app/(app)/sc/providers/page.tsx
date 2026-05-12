@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Building2, Plus, Search, Star } from "lucide-react";
+import { Building2, Plus, Star } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -21,6 +20,8 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
+
+import { ProviderFilters } from "./filters";
 
 export default async function SCProvidersPage({
   searchParams,
@@ -78,39 +79,7 @@ export default async function SCProvidersPage({
 
       <Card>
         <CardContent className="py-3">
-          <form className="flex flex-wrap items-center gap-2">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                name="q"
-                defaultValue={q}
-                placeholder="Search by name, service, or contact"
-                className="pl-8"
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <input
-                type="checkbox"
-                name="filter"
-                value="accepting"
-                defaultChecked={onlyAccepting}
-                className="h-4 w-4 rounded border-input"
-              />
-              Accepting only
-            </label>
-            <Button type="submit" size="sm" variant="outline">
-              Apply
-            </Button>
-            {(q || onlyAccepting) && (
-              <Button
-                size="sm"
-                variant="ghost"
-                render={<Link href="/sc/providers" />}
-              >
-                Clear
-              </Button>
-            )}
-          </form>
+          <ProviderFilters defaultQ={q} defaultAccepting={onlyAccepting} />
         </CardContent>
       </Card>
 

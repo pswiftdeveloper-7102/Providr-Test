@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { FormError } from "@/components/form-error";
 
 import {
   createParticipantAction,
@@ -99,11 +100,7 @@ export default function NewParticipantPage() {
               error={state.fieldErrors?.email}
             />
 
-            {state.error && (
-              <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {state.error}
-              </div>
-            )}
+            <FormError message={state.error} />
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button

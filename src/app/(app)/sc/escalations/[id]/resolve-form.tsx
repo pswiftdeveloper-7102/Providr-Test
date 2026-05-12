@@ -10,6 +10,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { FormError } from "@/components/form-error";
 
 import {
   updateEscalationAction,
@@ -79,11 +80,7 @@ export function ResolveEscalationForm({
         </div>
       )}
 
-      {state.error && (
-        <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {state.error}
-        </div>
-      )}
+      <FormError message={state.error} />
 
       <div className="flex justify-end">
         <Button type="submit" disabled={pending}>

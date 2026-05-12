@@ -55,7 +55,14 @@ export async function resolvePortalContext(
     redirect("/no-org");
   }
 
-  const activeOrg = orgs[0];
+  // For separate-org hybrid users (e.g. one Org for SC, another for
+  // Provider), pick the org that actually holds the requested portal
+  // entitlement. Falls back to the first org if none match — the redirect
+  // below will then bounce them to a portal that exists.
+  const orgWithRequestedPortal = orgs.find((o) =>
+    o.entitlements.some((e) => portalKey(e.portal) === requested)
+  );
+  const activeOrg = orgWithRequestedPortal ?? orgs[0];
   const availablePortals = activeOrg.entitlements.map((e) =>
     portalKey(e.portal)
   );
