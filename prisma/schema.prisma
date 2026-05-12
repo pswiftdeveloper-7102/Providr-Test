@@ -94,9 +94,10 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  memberships OrgMembership[]
-  accounts    Account[]
-  sessions    Session[]
+  memberships          OrgMembership[]
+  accounts             Account[]
+  sessions             Session[]
+  passwordResetTokens  PasswordResetToken[]
 }
 
 model OrgMembership {
@@ -146,6 +147,23 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Password reset — user requests a reset, we generate a token (hashed
+// at rest), they click the link, set a new password. Tokens are single-
+// use and expire after 1 hour. In production this would email the link;
+// for now the page returns the reset URL inline so it can be copied or
+// piped through whichever email transport gets wired up next.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }
 
 // ─── Domain — Provider portal MVP entities ─────────────────────────────

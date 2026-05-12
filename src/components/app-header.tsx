@@ -4,14 +4,16 @@ import { ProfileDropdown } from "@/components/profile-dropdown";
 import { ProvidrLogo } from "@/components/providr-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Separator } from "@/components/ui/separator";
+import { getNotifications } from "@/lib/notifications";
 import type { ResolvedPortalContext } from "@/lib/session";
 
 type Props = {
   context: ResolvedPortalContext;
 };
 
-export function AppHeader({ context }: Props) {
+export async function AppHeader({ context }: Props) {
   const { activeOrg, activePortal, availablePortals, user } = context;
+  const notifications = await getNotifications(context);
 
   return (
     <header className="border-b bg-background">
@@ -29,7 +31,7 @@ export function AppHeader({ context }: Props) {
         </div>
 
         <div className="flex items-center justify-end gap-1">
-          <NotificationsDropdown />
+          <NotificationsDropdown notifications={notifications} />
           <ThemeToggle />
           <ProfileDropdown
             user={{ name: user.name, email: user.email }}
