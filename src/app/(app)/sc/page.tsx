@@ -21,6 +21,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ModuleTabs } from "@/components/module-tabs";
 import { db } from "@/lib/db";
 import { formatCents } from "@/lib/utils";
 import { resolvePortalContext } from "@/lib/session";
@@ -175,6 +176,8 @@ export default async function SCHome() {
           </Button>
         </div>
       </header>
+
+      <ModuleTabs portal="sc" />
 
       <Alert>
         <AlertTriangle />

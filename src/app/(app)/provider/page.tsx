@@ -30,6 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+import { ModuleTabs } from "@/components/module-tabs";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { getActiveRoles, isManager, ROLE_LABEL } from "@/lib/rbac";
@@ -377,6 +378,8 @@ export default async function ProviderHome() {
           </Button>
         </div>
       </header>
+
+      <ModuleTabs portal="provider" />
 
       {focusItems.length > 0 && (
         <section aria-labelledby="focus-heading" className="space-y-3">
