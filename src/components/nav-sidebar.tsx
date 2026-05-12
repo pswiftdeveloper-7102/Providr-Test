@@ -40,7 +40,7 @@ const PROVIDER_NAV: NavItem[] = [
   { href: "/provider/roster", label: "Roster", icon: CalendarClock },
   { href: "/provider/shifts", label: "Shifts", icon: ClipboardList },
   { href: "/provider/incidents", label: "Incidents", icon: ShieldAlert },
-  { href: "/provider/care-plans", label: "Care plans", icon: HeartPulse },
+  { href: "/provider/care-plans", label: "Care plans", icon: HeartPulse, managerOnly: true },
   { href: "/provider/reviews", label: "Reviews", icon: ClipboardCheck, managerOnly: true },
 ];
 
