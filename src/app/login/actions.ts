@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import { z } from "zod";
 
@@ -35,13 +36,16 @@ export async function loginAction(
     return { fieldErrors };
   }
 
+  // Auth.js v5 beta + Server Actions doesn't reliably propagate the
+  // built-in redirect through React's action handler — call signIn with
+  // redirect:false and trigger the redirect ourselves once we know
+  // credentials matched.
   try {
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: "/provider",
+      redirect: false,
     });
-    return {};
   } catch (err) {
     if (err instanceof AuthError) {
       if (err.type === "CredentialsSignin") {
@@ -51,6 +55,8 @@ export async function loginAction(
     }
     throw err;
   }
+
+  redirect("/provider");
 }
 
 export async function googleSignInAction() {

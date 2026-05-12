@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { AuthError } from "next-auth";
 import bcrypt from "bcryptjs";
 import type { OrgRole, Portal } from "@prisma/client";
@@ -318,11 +319,14 @@ export async function signupAction(
 
   const redirectTo = primaryPortal === "SC" ? "/sc" : "/provider";
 
+  // Match the login action's pattern — call signIn without auto-redirect,
+  // then call redirect() ourselves. Avoids the "unexpected response"
+  // error that Auth.js v5 beta + Server Actions sometimes produces.
   try {
     await signIn("credentials", {
       email: data.email.toLowerCase(),
       password: data.password,
-      redirectTo,
+      redirect: false,
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -333,7 +337,7 @@ export async function signupAction(
     throw err;
   }
 
-  return {};
+  redirect(redirectTo);
 }
 
 export async function googleSignUpAction() {
