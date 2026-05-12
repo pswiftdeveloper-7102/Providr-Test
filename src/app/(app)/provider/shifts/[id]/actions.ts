@@ -6,6 +6,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
+import { dispatchNotification } from "@/lib/notifications/dispatch";
 
 // Confirm the shift exists and belongs to the active org before mutating.
 async function loadShift(shiftId: string) {
@@ -424,7 +425,19 @@ export async function logRestraintAction(
 
   revalidatePath(`/provider/shifts/${shiftId}`);
   revalidatePath(`/provider/participants/${shift.participantId}`);
-  if (autoIncidentId) revalidatePath("/provider/incidents");
+  if (autoIncidentId) {
+    revalidatePath("/provider/incidents");
+    // Q4 (2026-05-12): the auto-created incident is by definition
+    // reportable — fan out to email + SMS the same way a manually-logged
+    // reportable incident would.
+    void dispatchNotification({
+      type: "incident.reportable",
+      orgId: context.activeOrg.id,
+      participantId: shift.participantId,
+      incidentId: autoIncidentId,
+      summary: `${parsed.data.type.toLowerCase()} restraint used without an active Behaviour Support Plan. Reason: ${parsed.data.reason.slice(0, 200)}`,
+    });
+  }
   return {
     ok: true,
     autoIncidentId: autoIncidentId ?? undefined,

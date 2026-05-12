@@ -6,6 +6,7 @@ import {
   type LucideIcon,
   Building2,
   CalendarClock,
+  Bell,
   ClipboardCheck,
   ClipboardList,
   HardHat,
@@ -42,6 +43,12 @@ const PROVIDER_NAV: NavItem[] = [
   { href: "/provider/incidents", label: "Incidents", icon: ShieldAlert },
   { href: "/provider/care-plans", label: "Care plans", icon: HeartPulse, managerOnly: true },
   { href: "/provider/reviews", label: "Reviews", icon: ClipboardCheck, managerOnly: true },
+  {
+    href: "/provider/compliance-contact",
+    label: "Alerts",
+    icon: Bell,
+    managerOnly: true,
+  },
 ];
 
 const SC_NAV: NavItem[] = [

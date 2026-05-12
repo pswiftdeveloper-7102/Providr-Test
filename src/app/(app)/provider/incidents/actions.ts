@@ -7,6 +7,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
+import { dispatchNotification } from "@/lib/notifications/dispatch";
 
 const severityEnum = z.enum([
   "MINOR",
@@ -120,6 +121,21 @@ export async function createIncidentAction(
       createdById: session?.user?.id ?? null,
     },
   });
+
+  // Q4 (2026-05-12): reportable incidents trigger the in-app + email +
+  // SMS fan-out. The dispatcher pulls org admins + the compliance contact
+  // and is best-effort — if email/SMS transports aren't configured, it
+  // logs to the server console and returns ok=true so the incident
+  // creation flow isn't gated on a side-effect.
+  if (data.severity === "REPORTABLE") {
+    void dispatchNotification({
+      type: "incident.reportable",
+      orgId: context.activeOrg.id,
+      participantId: data.participantId,
+      incidentId: created.id,
+      summary: data.description.slice(0, 280),
+    });
+  }
 
   revalidatePath("/provider/incidents");
   revalidatePath("/provider");

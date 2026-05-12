@@ -45,6 +45,7 @@ model Org {
   entitlements           OrgEntitlement[]
   memberships            OrgMembership[]
   conflictOfInterestForm ConflictOfInterestForm?
+  complianceContact      OrgComplianceContact?
 
   participants          Participant[]
   workers               Worker[]
@@ -82,6 +83,21 @@ model ConflictOfInterestForm {
   notes          String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+// Q4 (2026-05-12): the NDIS Commission contact that gets pinged on
+// reportable incidents (in addition to org admins + the SC). One per org.
+model OrgComplianceContact {
+  id        String   @id @default(cuid())
+  orgId     String   @unique
+  org       Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  name      String
+  role      String?
+  email     String?
+  phone     String?  // E.164 — SMS goes here for reportable incidents
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model User {

@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { assertCoordinator } from "@/lib/rbac";
+import { dispatchNotification } from "@/lib/notifications/dispatch";
 
 const engagementStatusEnum = z.enum([
   "PROPOSED",
@@ -111,7 +112,13 @@ export async function updateEngagementAction(
       id: engagementId,
       participant: { orgId: context.activeOrg.id },
     },
-    select: { id: true, participantId: true, externalProviderId: true },
+    select: {
+      id: true,
+      participantId: true,
+      externalProviderId: true,
+      status: true,
+      participant: { select: { orgId: true } },
+    },
   });
   if (!existing) return { error: "Engagement not found." };
 
@@ -131,6 +138,11 @@ export async function updateEngagementAction(
     return { fieldErrors };
   }
 
+  const wasActiveOrPending =
+    existing.status === "ACTIVE" ||
+    existing.status === "AGREEMENT_SENT" ||
+    existing.status === "PROPOSED";
+
   await db.scEngagement.update({
     where: { id: existing.id },
     data: {
@@ -143,6 +155,23 @@ export async function updateEngagementAction(
       notes: parsed.data.notes || null,
     },
   });
+
+  // Q4 (2026-05-12): provider-drop fan-out when an active engagement
+  // transitions to ENDED. Notification is best-effort and async.
+  if (parsed.data.status === "ENDED" && wasActiveOrPending) {
+    const provider = await db.externalProvider.findUnique({
+      where: { id: existing.externalProviderId },
+      select: { name: true },
+    });
+    void dispatchNotification({
+      type: "provider.drop",
+      orgId: existing.participant.orgId,
+      participantId: existing.participantId,
+      engagementId: existing.id,
+      providerName: provider?.name ?? "An external provider",
+      reason: parsed.data.notes || null,
+    });
+  }
 
   revalidatePath(`/sc/participants/${existing.participantId}`);
   revalidatePath(`/sc/providers/${existing.externalProviderId}`);
@@ -161,9 +190,20 @@ export async function quickAdvanceEngagementAction(
       id: engagementId,
       participant: { orgId: context.activeOrg.id },
     },
-    select: { id: true, participantId: true },
+    select: {
+      id: true,
+      participantId: true,
+      externalProviderId: true,
+      status: true,
+      participant: { select: { orgId: true } },
+    },
   });
   if (!existing) return;
+
+  const wasActiveOrPending =
+    existing.status === "ACTIVE" ||
+    existing.status === "AGREEMENT_SENT" ||
+    existing.status === "PROPOSED";
 
   await db.scEngagement.update({
     where: { id: existing.id },
@@ -174,6 +214,22 @@ export async function quickAdvanceEngagementAction(
       ...(toStatus === "ENDED" ? { endedAt: new Date() } : {}),
     },
   });
+
+  // Q4 (2026-05-12): provider-drop fan-out — same as updateEngagement.
+  if (toStatus === "ENDED" && wasActiveOrPending) {
+    const provider = await db.externalProvider.findUnique({
+      where: { id: existing.externalProviderId },
+      select: { name: true },
+    });
+    void dispatchNotification({
+      type: "provider.drop",
+      orgId: existing.participant.orgId,
+      participantId: existing.participantId,
+      engagementId: existing.id,
+      providerName: provider?.name ?? "An external provider",
+      reason: null,
+    });
+  }
 
   revalidatePath(`/sc/participants/${existing.participantId}`);
 }
