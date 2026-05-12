@@ -17,6 +17,9 @@ datasource db {
 enum Portal {
   PROVIDER
   SC
+  // Q8 (2026-05-12): support workers get their own logins to use the
+  // worker portal at /worker — own roster, clock-in, voice-to-text notes.
+  WORKER
 }
 
 enum OrgRole {
@@ -98,6 +101,8 @@ model User {
   accounts             Account[]
   sessions             Session[]
   passwordResetTokens  PasswordResetToken[]
+  // Q8: a User may also be a support worker linked through Worker.userId.
+  workerProfile        Worker?           @relation("WorkerUser")
 }
 
 model OrgMembership {
@@ -164,6 +169,23 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// Q8 (2026-05-12): admin invites a Worker to claim a login. The invite
+// link carries a one-time token; the worker sets a password (or signs in
+// via Google) and the resulting User is linked back via Worker.userId.
+model WorkerInvite {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  workerId  String
+  worker    Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  email     String
+  expiresAt DateTime
+  acceptedAt DateTime?
+  createdBy String?
+  createdAt DateTime  @default(now())
+
+  @@index([workerId])
 }
 
 // ─── Domain — Provider portal MVP entities ─────────────────────────────
@@ -405,7 +427,8 @@ model Worker {
   id        String     @id @default(cuid())
   orgId     String
   org       Org        @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  userId    String?
+  userId    String?    @unique
+  user      User?      @relation("WorkerUser", fields: [userId], references: [id], onDelete: SetNull)
   firstName String
   lastName  String
   email     String?
@@ -421,6 +444,7 @@ model Worker {
 
   shifts          Shift[]
   trainingRecords TrainingRecord[]
+  invites         WorkerInvite[]
 }
 
 enum ShiftStatus {
@@ -460,6 +484,16 @@ model Shift {
   expiredCheckOverrideAt DateTime?
   expiredCheckOverrideBy String? // User.id of the admin who overrode
 
+  // Q8 (2026-05-12): location capture on mobile clock-in/out. lat/lng are
+  // browser geolocation values; accuracy is the reported metres radius.
+  // Null if the worker declined permission or it was logged from desktop.
+  clockInLat        Float?
+  clockInLng        Float?
+  clockInAccuracyM  Float?
+  clockOutLat       Float?
+  clockOutLng       Float?
+  clockOutAccuracyM Float?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -475,14 +509,23 @@ model Shift {
 // Q4 paperwork-friction #2 (2026-05-11): the end-of-shift handover note is
 // flagged separately via `isHandover` so the clock-out flow can prompt for
 // it and the next shift can surface it prominently.
+enum NoteInputMethod {
+  KEYBOARD
+  VOICE
+}
+
 model ProgressNote {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   shiftId     String
-  shift       Shift    @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+  shift       Shift            @relation(fields: [shiftId], references: [id], onDelete: Cascade)
   authorId    String?
-  body        String   @db.Text
-  isHandover  Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  body        String           @db.Text
+  isHandover  Boolean          @default(false)
+  // Q8 (2026-05-12): voice-to-text-friendly auditing. If the note was
+  // captured via the browser SpeechRecognition API we flag it so admins
+  // can spot transcription errors when reviewing.
+  inputMethod NoteInputMethod  @default(KEYBOARD)
+  createdAt   DateTime         @default(now())
 
   @@index([shiftId, createdAt])
   @@index([shiftId, isHandover])

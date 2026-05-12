@@ -86,3 +86,54 @@ export async function resolvePortalContext(
     availablePortals,
   };
 }
+
+// Q8 (2026-05-12): worker portal context. Workers are linked to a User
+// via Worker.userId, not OrgMembership — admins shouldn't have to invite
+// them as full org members to give them a login. This helper enforces the
+// link and returns the worker + their org for the /worker portal.
+export type ResolvedWorkerContext = {
+  user: { id: string; email: string | null; name: string | null };
+  worker: {
+    id: string;
+    orgId: string;
+    firstName: string;
+    lastName: string;
+    email: string | null;
+  };
+  org: { id: string; legalName: string; tradingName: string | null };
+};
+
+export async function resolveWorkerContext(): Promise<ResolvedWorkerContext> {
+  const user = await requireUser();
+  const worker = await db.worker.findFirst({
+    where: { userId: user.id },
+    select: {
+      id: true,
+      orgId: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      org: {
+        select: { id: true, legalName: true, tradingName: true },
+      },
+    },
+  });
+  if (!worker) {
+    redirect("/no-org");
+  }
+  return {
+    user: {
+      id: user.id,
+      email: user.email ?? null,
+      name: user.name ?? null,
+    },
+    worker: {
+      id: worker.id,
+      orgId: worker.orgId,
+      firstName: worker.firstName,
+      lastName: worker.lastName,
+      email: worker.email,
+    },
+    org: worker.org,
+  };
+}

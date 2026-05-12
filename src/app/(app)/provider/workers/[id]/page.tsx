@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { requireManager } from "@/lib/rbac";
 
+import { InvitePanel } from "./invite-panel";
 import { TrainingSection } from "./training-section";
 import { WorkerEditForm } from "./worker-edit-form";
 
@@ -47,6 +48,13 @@ export default async function WorkerDetailPage({
           ndisWorkerCheckExpiry: worker.ndisWorkerCheckExpiry,
           firstAidExpiry: worker.firstAidExpiry,
         }}
+      />
+
+      <InvitePanel
+        workerId={worker.id}
+        hasLogin={!!worker.userId}
+        workerEmail={worker.email}
+        workerFirstName={worker.firstName}
       />
 
       <TrainingSection workerId={worker.id} records={worker.trainingRecords} />
