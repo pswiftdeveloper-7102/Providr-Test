@@ -474,7 +474,7 @@ export default async function ProviderHome() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-right">
+          <div className="hidden text-right sm:block">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               Today
             </p>
@@ -495,7 +495,7 @@ export default async function ProviderHome() {
 
       <section
         aria-labelledby="stats-heading"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid grid-cols-2 gap-3 lg:grid-cols-4"
       >
         <h2 id="stats-heading" className="sr-only">
           At a glance
@@ -505,11 +505,8 @@ export default async function ProviderHome() {
           const isDanger = stat.accent === "danger";
           return (
             <Card key={stat.label} size="sm" className="overflow-hidden">
-              <CardContent>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    {stat.label}
-                  </div>
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2">
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                       isDanger
@@ -519,17 +516,20 @@ export default async function ProviderHome() {
                   >
                     <Icon className="h-4 w-4" />
                   </div>
+                  <p className="truncate text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    {stat.label}
+                  </p>
                 </div>
-                <div className="mt-2 text-3xl font-semibold tracking-tight">
+                <p className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
                   {stat.value}
-                </div>
+                </p>
                 {stat.delta ? (
-                  <div className="mt-1 flex items-center gap-1 text-xs">
+                  <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px]">
                     {stat.delta.direction === "up" && (
-                      <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                      <TrendingUp className="h-3 w-3 text-emerald-600" />
                     )}
                     {stat.delta.direction === "down" && (
-                      <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                      <TrendingDown className="h-3 w-3 text-destructive" />
                     )}
                     <span
                       className={
