@@ -20,7 +20,6 @@ import {
   Home,
   type LucideIcon,
   MessageCircle,
-  Network,
   PalmtreeIcon,
   Settings,
   ShieldAlert,
@@ -190,7 +189,7 @@ const PROVIDER_CONFIG: ModuleConfig<ProviderModule> = {
 
 // ────────── SC config ──────────
 
-type ScModule = "incident" | "coordination";
+type ScModule = "incident" | "rostering";
 
 const SC_INCIDENT_NAV: NavItem[] = [
   { href: "/sc", label: "Overview", icon: Home },
@@ -204,7 +203,7 @@ const SC_INCIDENT_NAV: NavItem[] = [
   { href: "/sc/evidence", label: "Evidence", icon: FileText },
 ];
 
-const SC_COORDINATION_NAV: NavItem[] = [
+const SC_ROSTERING_NAV: NavItem[] = [
   { href: "/sc", label: "Overview", icon: Home },
   { href: "/sc/participants", label: "Participants", icon: Users },
   { href: "/sc/providers", label: "Providers", icon: Building2 },
@@ -214,16 +213,17 @@ const SC_COORDINATION_NAV: NavItem[] = [
 const SC_CONFIG: ModuleConfig<ScModule> = {
   storageKey: "providr.sc.module",
   rootHref: "/sc",
-  // SC doesn't roster delivery workers, so the second tab is
-  // "Coordination" — covers their day-to-day participant + provider
-  // management work.
+  // Matches the Provider portal's tabs label-for-label per client spec.
+  // The items underneath are SC-appropriate (SCs coordinate rather than
+  // roster delivery workers themselves), but the tab is named Rostering
+  // to keep parity with Provider.
   tabs: [
     { key: "incident", label: "Incident Logging", icon: ShieldAlert },
-    { key: "coordination", label: "Coordination", icon: Network },
+    { key: "rostering", label: "Rostering", icon: CalendarClock },
   ],
   itemsByModule: {
     incident: SC_INCIDENT_NAV,
-    coordination: SC_COORDINATION_NAV,
+    rostering: SC_ROSTERING_NAV,
   },
   autoSwitchByModule: {
     incident: [
@@ -232,7 +232,7 @@ const SC_CONFIG: ModuleConfig<ScModule> = {
       "/sc/reviews",
       "/sc/evidence",
     ],
-    coordination: [
+    rostering: [
       "/sc/participants",
       "/sc/providers",
       "/sc/budgets",
