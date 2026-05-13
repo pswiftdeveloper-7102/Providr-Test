@@ -231,7 +231,8 @@ export function IncidentsTable({ rows }: { rows: IncidentRow[] }) {
         </DropdownMenu>
       </div>
 
-      <Table>
+      <div className="overflow-x-auto">
+      <Table className="min-w-[720px]">
         <TableHeader>
           <TableRow>
             <SortableHeader sort={sort} k="number" onSort={onSort}>
@@ -311,6 +312,7 @@ export function IncidentsTable({ rows }: { rows: IncidentRow[] }) {
           )}
         </TableBody>
       </Table>
+      </div>
 
       <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted-foreground">
         <span>

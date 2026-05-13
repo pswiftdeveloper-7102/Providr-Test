@@ -72,8 +72,9 @@ export default async function ParticipantsListPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <Table>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+          <Table className="min-w-[560px]">
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
@@ -120,6 +121,7 @@ export default async function ParticipantsListPage() {
               })}
             </TableBody>
           </Table>
+          </div>
         </Card>
       )}
     </div>
