@@ -601,6 +601,32 @@ enum IncidentStatus {
   CLOSED
 }
 
+// 2026-05-13: incident type drives downstream classification + reporting.
+// Aligned with the NDIS Commission incident-reporting categories so the
+// dropdown values map straight to what regulators expect.
+enum IncidentType {
+  INJURY
+  ABUSE
+  NEGLECT
+  UNLAWFUL_CONTACT
+  UNAUTHORISED_RESTRICTIVE_PRACTICE
+  PROPERTY_DAMAGE
+  MEDICATION_ERROR
+  MISSING_PERSON
+  DEATH
+  OTHER
+}
+
+// Tracks which of the three report-creation flows the incident came in
+// through. Used for analytics and for surfacing draft incidents back to
+// the supervisor with appropriate UX.
+enum IncidentSource {
+  QUICK
+  AI_ASSISTED
+  WIZARD
+  AUTO
+}
+
 // Restraint use record — Provider Scene D (compliance iceberg) calls these
 // out as a distinct artefact. NDIS requires every restraint use to be
 // logged, including the type, justification, who authorised it, and what
@@ -915,6 +941,22 @@ model Incident {
   immediateActions String?       @db.Text
   reportedToNdisAt DateTime?
   createdById   String?
+
+  // 2026-05-13: extended fields to support the three report flows
+  // (Quick / AI-Assisted / Compliance Wizard). Wizard captures all of
+  // them; Quick only fills location + type; AI-Assisted populates them
+  // from the LLM-structured narrative.
+  source              IncidentSource? @default(QUICK)
+  incidentType        IncidentType?
+  location            String?
+  narrativeInput      String?         @db.Text  // raw user text for AI flow
+  medicalAttention    Boolean?        @default(false)
+  medicalNotes        String?         @db.Text
+  restrictivePractice Boolean?        @default(false)
+  restrictiveNotes    String?         @db.Text
+  witnessNames        String?         @db.Text
+  declarationName     String?
+  declarationSignedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

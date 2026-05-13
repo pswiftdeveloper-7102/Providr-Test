@@ -23,6 +23,19 @@ const statusEnum = z.enum([
   "CLOSED",
 ]);
 
+const typeEnum = z.enum([
+  "INJURY",
+  "ABUSE",
+  "NEGLECT",
+  "UNLAWFUL_CONTACT",
+  "UNAUTHORISED_RESTRICTIVE_PRACTICE",
+  "PROPERTY_DAMAGE",
+  "MEDICATION_ERROR",
+  "MISSING_PERSON",
+  "DEATH",
+  "OTHER",
+]);
+
 const createIncidentSchema = z.object({
   participantId: z.string().min(1, "Pick a participant."),
   shiftId: z.string().optional().or(z.literal("")),
@@ -33,6 +46,62 @@ const createIncidentSchema = z.object({
     .trim()
     .min(10, "Describe what happened (10+ characters)."),
   immediateActions: z.string().trim().optional().or(z.literal("")),
+});
+
+// Quick Report — minimal fields, saves as DRAFT. Participant is optional
+// (you might be reporting before you can identify them). Severity and
+// type are optional too so a worker can log fast and let the supervisor
+// fill in the gaps.
+const quickIncidentSchema = z.object({
+  participantId: z.string().optional().or(z.literal("")),
+  occurredAt: z.string().min(1, "Date and time required."),
+  location: z.string().trim().optional().or(z.literal("")),
+  incidentType: typeEnum.optional(),
+  severity: severityEnum.optional(),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Describe what happened (10+ characters)."),
+  immediateActions: z.string().trim().optional().or(z.literal("")),
+});
+
+// Compliance Wizard — captures everything the NDIS Commission form
+// asks for. Most fields optional at the schema level; the wizard UI
+// enforces required-ness per step.
+const wizardIncidentSchema = z.object({
+  participantId: z.string().optional().or(z.literal("")),
+  occurredAt: z.string().min(1, "Date and time required."),
+  location: z.string().trim().min(1, "Location is required."),
+  incidentType: typeEnum,
+  severity: severityEnum,
+  description: z
+    .string()
+    .trim()
+    .min(10, "Describe what happened (10+ characters)."),
+  immediateActions: z.string().trim().optional().or(z.literal("")),
+  witnessNames: z.string().trim().optional().or(z.literal("")),
+  medicalAttention: z
+    .string()
+    .optional()
+    .or(z.literal("")),
+  medicalNotes: z.string().trim().optional().or(z.literal("")),
+  restrictivePractice: z.string().optional().or(z.literal("")),
+  restrictiveNotes: z.string().trim().optional().or(z.literal("")),
+  declarationName: z.string().trim().min(2, "Sign with your full name."),
+});
+
+const aiIncidentSchema = z.object({
+  participantId: z.string().optional().or(z.literal("")),
+  occurredAt: z.string().min(1, "Date and time required."),
+  location: z.string().trim().optional().or(z.literal("")),
+  incidentType: typeEnum.optional(),
+  severity: severityEnum,
+  description: z
+    .string()
+    .trim()
+    .min(10, "Describe what happened (10+ characters)."),
+  immediateActions: z.string().trim().optional().or(z.literal("")),
+  narrativeInput: z.string().trim().optional().or(z.literal("")),
 });
 
 export type CreateIncidentState = {
@@ -155,6 +224,239 @@ export async function markReportedToNdisAction(incidentId: string) {
   revalidatePath("/provider/incidents");
   revalidatePath(`/provider/incidents/${incidentId}`);
   return { ok: true };
+}
+
+// ────────── Quick Report (Q4 of the new incident flow) ──────────
+export async function createQuickIncidentAction(
+  _prev: CreateIncidentState,
+  formData: FormData
+): Promise<CreateIncidentState> {
+  const context = await resolvePortalContext("provider");
+
+  const parsed = quickIncidentSchema.safeParse({
+    participantId: formData.get("participantId") ?? "",
+    occurredAt: formData.get("occurredAt"),
+    location: formData.get("location") ?? "",
+    incidentType: formData.get("incidentType") || undefined,
+    severity: formData.get("severity") || undefined,
+    description: formData.get("description"),
+    immediateActions: formData.get("immediateActions") ?? "",
+  });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = String(issue.path[0]);
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    }
+    return { fieldErrors };
+  }
+
+  const data = parsed.data;
+  // If a participant was selected, confirm they belong to this org.
+  if (data.participantId) {
+    const ok = await db.participant.findFirst({
+      where: { id: data.participantId, orgId: context.activeOrg.id },
+      select: { id: true },
+    });
+    if (!ok) {
+      return { fieldErrors: { participantId: "Participant not found." } };
+    }
+  }
+
+  const occurredAt = new Date(data.occurredAt);
+  if (Number.isNaN(occurredAt.getTime())) {
+    return { fieldErrors: { occurredAt: "Invalid date/time." } };
+  }
+
+  const session = await auth();
+  const created = await db.incident.create({
+    data: {
+      orgId: context.activeOrg.id,
+      participantId: data.participantId || null,
+      occurredAt,
+      reportedAt: null, // not yet reviewed by manager
+      severity: data.severity ?? "MINOR",
+      status: "DRAFT",
+      description: data.description,
+      immediateActions: data.immediateActions || null,
+      createdById: session?.user?.id ?? null,
+      source: "QUICK",
+      incidentType: data.incidentType ?? null,
+      location: data.location || null,
+    },
+  });
+
+  revalidatePath("/provider/incidents");
+  redirect(`/provider/incidents/${created.id}`);
+}
+
+// ────────── Compliance Wizard ──────────
+export async function createWizardIncidentAction(
+  _prev: CreateIncidentState,
+  formData: FormData
+): Promise<CreateIncidentState> {
+  const context = await resolvePortalContext("provider");
+
+  const parsed = wizardIncidentSchema.safeParse({
+    participantId: formData.get("participantId") ?? "",
+    occurredAt: formData.get("occurredAt"),
+    location: formData.get("location"),
+    incidentType: formData.get("incidentType"),
+    severity: formData.get("severity"),
+    description: formData.get("description"),
+    immediateActions: formData.get("immediateActions") ?? "",
+    witnessNames: formData.get("witnessNames") ?? "",
+    medicalAttention: formData.get("medicalAttention") ?? "",
+    medicalNotes: formData.get("medicalNotes") ?? "",
+    restrictivePractice: formData.get("restrictivePractice") ?? "",
+    restrictiveNotes: formData.get("restrictiveNotes") ?? "",
+    declarationName: formData.get("declarationName"),
+  });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = String(issue.path[0]);
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    }
+    return { fieldErrors };
+  }
+
+  const data = parsed.data;
+  if (data.participantId) {
+    const ok = await db.participant.findFirst({
+      where: { id: data.participantId, orgId: context.activeOrg.id },
+      select: { id: true },
+    });
+    if (!ok) {
+      return { fieldErrors: { participantId: "Participant not found." } };
+    }
+  }
+
+  const occurredAt = new Date(data.occurredAt);
+  if (Number.isNaN(occurredAt.getTime())) {
+    return { fieldErrors: { occurredAt: "Invalid date/time." } };
+  }
+
+  const medicalAttention = data.medicalAttention === "yes";
+  const restrictivePractice = data.restrictivePractice === "yes";
+  const session = await auth();
+  const now = new Date();
+
+  const created = await db.incident.create({
+    data: {
+      orgId: context.activeOrg.id,
+      participantId: data.participantId || null,
+      occurredAt,
+      reportedAt: now,
+      severity: data.severity,
+      status: "REPORTED",
+      description: data.description,
+      immediateActions: data.immediateActions || null,
+      createdById: session?.user?.id ?? null,
+      source: "WIZARD",
+      incidentType: data.incidentType,
+      location: data.location,
+      witnessNames: data.witnessNames || null,
+      medicalAttention,
+      medicalNotes: data.medicalNotes || null,
+      restrictivePractice,
+      restrictiveNotes: data.restrictiveNotes || null,
+      declarationName: data.declarationName,
+      declarationSignedAt: now,
+    },
+  });
+
+  if (data.severity === "REPORTABLE" && data.participantId) {
+    void dispatchNotification({
+      type: "incident.reportable",
+      orgId: context.activeOrg.id,
+      participantId: data.participantId,
+      incidentId: created.id,
+      summary: data.description.slice(0, 280),
+    });
+  }
+
+  revalidatePath("/provider/incidents");
+  revalidatePath("/provider");
+  redirect(`/provider/incidents/${created.id}`);
+}
+
+// ────────── AI-Assisted: save the reviewed (post-extraction) form ──────────
+export async function createAIIncidentAction(
+  _prev: CreateIncidentState,
+  formData: FormData
+): Promise<CreateIncidentState> {
+  const context = await resolvePortalContext("provider");
+
+  const parsed = aiIncidentSchema.safeParse({
+    participantId: formData.get("participantId") ?? "",
+    occurredAt: formData.get("occurredAt"),
+    location: formData.get("location") ?? "",
+    incidentType: formData.get("incidentType") || undefined,
+    severity: formData.get("severity"),
+    description: formData.get("description"),
+    immediateActions: formData.get("immediateActions") ?? "",
+    narrativeInput: formData.get("narrativeInput") ?? "",
+  });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = String(issue.path[0]);
+      if (!fieldErrors[key]) fieldErrors[key] = issue.message;
+    }
+    return { fieldErrors };
+  }
+
+  const data = parsed.data;
+  if (data.participantId) {
+    const ok = await db.participant.findFirst({
+      where: { id: data.participantId, orgId: context.activeOrg.id },
+      select: { id: true },
+    });
+    if (!ok) {
+      return { fieldErrors: { participantId: "Participant not found." } };
+    }
+  }
+
+  const occurredAt = new Date(data.occurredAt);
+  if (Number.isNaN(occurredAt.getTime())) {
+    return { fieldErrors: { occurredAt: "Invalid date/time." } };
+  }
+
+  const session = await auth();
+  const now = new Date();
+
+  const created = await db.incident.create({
+    data: {
+      orgId: context.activeOrg.id,
+      participantId: data.participantId || null,
+      occurredAt,
+      reportedAt: now,
+      severity: data.severity,
+      status: "REPORTED",
+      description: data.description,
+      immediateActions: data.immediateActions || null,
+      createdById: session?.user?.id ?? null,
+      source: "AI_ASSISTED",
+      incidentType: data.incidentType ?? null,
+      location: data.location || null,
+      narrativeInput: data.narrativeInput || null,
+    },
+  });
+
+  if (data.severity === "REPORTABLE" && data.participantId) {
+    void dispatchNotification({
+      type: "incident.reportable",
+      orgId: context.activeOrg.id,
+      participantId: data.participantId,
+      incidentId: created.id,
+      summary: data.description.slice(0, 280),
+    });
+  }
+
+  revalidatePath("/provider/incidents");
+  revalidatePath("/provider");
+  redirect(`/provider/incidents/${created.id}`);
 }
 
 const updateStatusSchema = statusEnum;

@@ -1,7 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { PwaRegister } from "@/components/pwa-register";
 import { ThemeProvider } from "@/components/theme-provider";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -10,6 +11,19 @@ export const metadata: Metadata = {
   title: "Providr",
   description:
     "NDIS provider operations and support coordination — built for the way the work actually happens.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Providr",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#6d28d9",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({
@@ -31,6 +45,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <PwaRegister />
         </ThemeProvider>
       </body>
     </html>
