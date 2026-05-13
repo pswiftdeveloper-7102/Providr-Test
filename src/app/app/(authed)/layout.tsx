@@ -2,14 +2,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Home, ListChecks, Plus, User } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { ProvidrLogo } from "@/components/providr-logo";
+import { cn } from "@/lib/utils";
 import { resolvePortalContext } from "@/lib/session";
 
-// Mobile-first PWA shell. Top bar with logo + org, bottom tab nav, and a
-// floating "Report" CTA. Distinct from the desktop AppShell — no
-// sidebar, no portal switcher, and no menus beyond what's strictly
-// incident-related.
+// Mobile-first PWA shell. Top bar with logo + org, bottom tab nav with
+// 4 evenly-spaced tabs (Home / Incidents / Report / Profile). No
+// sidebar, no portal switcher — incident-only by design.
 export default async function AppAuthedLayout({
   children,
 }: {
@@ -31,28 +30,21 @@ export default async function AppAuthedLayout({
       </header>
 
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-md px-4 py-5 pb-32">
+        <div className="mx-auto w-full max-w-md px-4 py-5 pb-28">
           {children}
         </div>
       </main>
 
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-md items-center justify-around px-4 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+        <div className="mx-auto grid w-full max-w-md grid-cols-4 items-stretch px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
           <NavTab href="/app" icon={Home} label="Home" />
           <NavTab href="/app/incidents" icon={ListChecks} label="Incidents" />
-          <Button
-            size="lg"
-            className="-mt-6 h-14 w-14 rounded-full shadow-lg"
-            render={
-              <Link
-                href="/app/incidents/new"
-                aria-label="Report incident"
-              />
-            }
-          >
-            <Plus className="!h-5 !w-5" />
-          </Button>
-          <div className="w-12" /> {/* spacer to balance the FAB */}
+          <NavTab
+            href="/app/incidents/new"
+            icon={Plus}
+            label="Report"
+            variant="primary"
+          />
           <NavTab href="/app/profile" icon={User} label="Profile" />
         </div>
       </nav>
@@ -64,18 +56,36 @@ function NavTab({
   href,
   icon: Icon,
   label,
+  variant,
 }: {
   href: string;
   icon: typeof Home;
   label: string;
+  variant?: "primary";
 }) {
+  const isPrimary = variant === "primary";
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-0.5 rounded-md px-3 py-1.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+      className={cn(
+        "flex flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 text-[11px] transition-colors",
+        isPrimary
+          ? "text-primary"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+      )}
+      aria-label={label}
     >
-      <Icon className="h-5 w-5" />
-      <span>{label}</span>
+      <span
+        className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-full",
+          isPrimary && "bg-primary text-primary-foreground shadow-md"
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className={cn(isPrimary && "font-medium text-foreground")}>
+        {label}
+      </span>
     </Link>
   );
 }
