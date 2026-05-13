@@ -9,11 +9,11 @@ type Props = {
 
 export function AuthLayout({ children }: Props) {
   return (
-    <div className="flex min-h-screen flex-1">
-      <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12 sm:px-12">
+    <div className="flex min-h-svh flex-1">
+      <div className="flex flex-1 flex-col items-center bg-white px-5 py-8 sm:justify-center sm:px-12 sm:py-12">
         <div className="w-full max-w-md">
-          <div className="mb-10 flex justify-center">
-            <ProvidrLogo height={40} />
+          <div className="mb-6 flex justify-center sm:mb-10">
+            <ProvidrLogo height={36} />
           </div>
           {children}
         </div>
