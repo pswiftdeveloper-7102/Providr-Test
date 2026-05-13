@@ -262,7 +262,7 @@ export default async function SCHome() {
 
       <section
         aria-labelledby="stats-heading"
-        className="grid grid-cols-2 gap-3 sm:grid-cols-4"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4"
       >
         <h2 id="stats-heading" className="sr-only">
           At a glance

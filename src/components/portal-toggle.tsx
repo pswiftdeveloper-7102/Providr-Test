@@ -30,7 +30,7 @@ export function PortalToggle({ active, available }: Props) {
               key={portal}
               aria-disabled="true"
               title={`${label} portal not enabled for this organisation`}
-              className="px-4 py-1.5 text-sm font-medium text-muted-foreground/40"
+              className="px-3 py-1.5 text-xs font-medium text-muted-foreground/40 sm:px-4 sm:text-sm"
             >
               {label}
             </span>
@@ -44,7 +44,7 @@ export function PortalToggle({ active, available }: Props) {
             role="tab"
             aria-selected={isActive}
             className={cn(
-              "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
+              "rounded-md px-3 py-1.5 text-xs font-medium transition-colors sm:px-4 sm:text-sm",
               isActive
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
