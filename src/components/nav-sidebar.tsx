@@ -20,6 +20,7 @@ import {
   Home,
   type LucideIcon,
   MessageCircle,
+  Network,
   PalmtreeIcon,
   Settings,
   ShieldAlert,
@@ -32,8 +33,6 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import type { PortalKey } from "@/lib/portal";
 
-type ProviderModule = "incident" | "rostering";
-
 type NavItem = {
   href: string;
   label: string;
@@ -45,9 +44,33 @@ type NavItem = {
   managerOnly?: boolean;
 };
 
-// Per the 2026-05-12 client spec, the Provider sidebar is split into
-// two modules. The switcher at the top of the sidebar selects which
-// menu is visible. The header + main content area don't change.
+type ModuleTab<K extends string> = {
+  key: K;
+  label: string;
+  icon: LucideIcon;
+};
+
+type ModuleConfig<K extends string> = {
+  // Storage key for localStorage so each portal persists its own state.
+  storageKey: string;
+  // Path the "Overview" link points to — used to handle the special-case
+  // where overview matches its href exactly, not by prefix.
+  rootHref: string;
+  // The two tabs in the segmented control.
+  tabs: ModuleTab<K>[];
+  // The nav items shown when each tab is active.
+  itemsByModule: Record<K, NavItem[]>;
+  // Pathname prefixes that auto-switch the sidebar into the matching
+  // module on direct navigation (e.g. clicking a notification link).
+  autoSwitchByModule: Record<K, string[]>;
+  // Default module if pathname doesn't match any autoSwitchByModule entry.
+  defaultModule: K;
+};
+
+// ────────── Provider config ──────────
+
+type ProviderModule = "incident" | "rostering";
+
 const PROVIDER_INCIDENT_NAV: NavItem[] = [
   { href: "/provider", label: "Overview", icon: Home, managerOnly: true },
   { href: "/provider/incidents", label: "Incidents", icon: ShieldAlert },
@@ -131,107 +154,175 @@ const PROVIDER_ROSTERING_NAV: NavItem[] = [
   },
 ];
 
-// URL prefixes that auto-switch the Provider sidebar into the matching
-// module so that direct navigation (e.g. clicking a notification link)
-// shows the correct menu.
-const ROSTERING_PREFIXES = [
-  "/provider/roster",
-  "/provider/shifts",
-  "/provider/availability",
-  "/provider/timesheets",
-  "/provider/leave",
-  "/provider/payroll-exports",
-  "/provider/settings",
-  "/provider/workers",
-];
+const PROVIDER_CONFIG: ModuleConfig<ProviderModule> = {
+  storageKey: "providr.provider.module",
+  rootHref: "/provider",
+  tabs: [
+    { key: "incident", label: "Incident Logging", icon: ShieldAlert },
+    { key: "rostering", label: "Rostering", icon: CalendarClock },
+  ],
+  itemsByModule: {
+    incident: PROVIDER_INCIDENT_NAV,
+    rostering: PROVIDER_ROSTERING_NAV,
+  },
+  autoSwitchByModule: {
+    incident: [
+      "/provider/incidents",
+      "/provider/behaviour-insights",
+      "/provider/care-plans",
+      "/provider/compliance-contact",
+      "/provider/reviews",
+      "/provider/audit-pack",
+    ],
+    rostering: [
+      "/provider/roster",
+      "/provider/shifts",
+      "/provider/availability",
+      "/provider/timesheets",
+      "/provider/leave",
+      "/provider/payroll-exports",
+      "/provider/settings",
+      "/provider/workers",
+    ],
+  },
+  defaultModule: "incident",
+};
 
-const SC_NAV: NavItem[] = [
+// ────────── SC config ──────────
+
+type ScModule = "incident" | "coordination";
+
+const SC_INCIDENT_NAV: NavItem[] = [
   { href: "/sc", label: "Overview", icon: Home },
-  { href: "/sc/participants", label: "Participants", icon: Users },
-  { href: "/sc/providers", label: "Providers", icon: Building2 },
-  { href: "/sc/budgets", label: "Budgets", icon: Wallet },
   { href: "/sc/escalations", label: "Escalations", icon: AlertTriangle },
-  { href: "/sc/communications", label: "Communications", icon: MessageCircle },
+  {
+    href: "/sc/communications",
+    label: "Communications",
+    icon: MessageCircle,
+  },
   { href: "/sc/reviews", label: "Reviews", icon: ClipboardCheck },
   { href: "/sc/evidence", label: "Evidence", icon: FileText },
 ];
 
-const MODULE_TABS: Array<{
-  key: ProviderModule;
-  label: string;
-  icon: LucideIcon;
-}> = [
-  { key: "incident", label: "Incident Logging", icon: ShieldAlert },
-  { key: "rostering", label: "Rostering", icon: CalendarClock },
+const SC_COORDINATION_NAV: NavItem[] = [
+  { href: "/sc", label: "Overview", icon: Home },
+  { href: "/sc/participants", label: "Participants", icon: Users },
+  { href: "/sc/providers", label: "Providers", icon: Building2 },
+  { href: "/sc/budgets", label: "Budgets", icon: Wallet },
 ];
 
-const STORAGE_KEY = "providr.provider.module";
+const SC_CONFIG: ModuleConfig<ScModule> = {
+  storageKey: "providr.sc.module",
+  rootHref: "/sc",
+  // SC doesn't roster delivery workers, so the second tab is
+  // "Coordination" — covers their day-to-day participant + provider
+  // management work.
+  tabs: [
+    { key: "incident", label: "Incident Logging", icon: ShieldAlert },
+    { key: "coordination", label: "Coordination", icon: Network },
+  ],
+  itemsByModule: {
+    incident: SC_INCIDENT_NAV,
+    coordination: SC_COORDINATION_NAV,
+  },
+  autoSwitchByModule: {
+    incident: [
+      "/sc/escalations",
+      "/sc/communications",
+      "/sc/reviews",
+      "/sc/evidence",
+    ],
+    coordination: [
+      "/sc/participants",
+      "/sc/providers",
+      "/sc/budgets",
+    ],
+  },
+  defaultModule: "incident",
+};
+
+// ────────── Dispatcher ──────────
 
 type Props = {
   portal: PortalKey;
   isManager: boolean;
 };
 
-function getInitialModule(pathname: string): ProviderModule {
-  if (ROSTERING_PREFIXES.some((p) => pathname.startsWith(p))) {
-    return "rostering";
-  }
-  return "incident";
-}
-
 export function NavSidebar({ portal, isManager }: Props) {
   const pathname = usePathname();
 
-  // SC + worker portals keep the existing flat sidebar — the spec only
-  // describes the Provider switcher.
-  if (portal === "sc") {
-    return <FlatSidebar pathname={pathname} portal={portal} items={SC_NAV} />;
-  }
   if (portal === "worker") return null;
-
+  if (portal === "provider") {
+    return (
+      <ModuleSidebar
+        pathname={pathname}
+        isManager={isManager}
+        config={PROVIDER_CONFIG}
+      />
+    );
+  }
   return (
-    <ProviderSidebar pathname={pathname} isManager={isManager} />
+    <ModuleSidebar
+      pathname={pathname}
+      isManager={isManager}
+      config={SC_CONFIG}
+    />
   );
 }
 
-function ProviderSidebar({
+// ────────── Generic sidebar with module switcher ──────────
+
+function ModuleSidebar<K extends string>({
   pathname,
   isManager,
+  config,
 }: {
   pathname: string;
   isManager: boolean;
+  config: ModuleConfig<K>;
 }) {
-  const [module, setModule] = useState<ProviderModule>(() =>
-    getInitialModule(pathname)
-  );
+  const getModuleForPath = (path: string): K => {
+    for (const tab of config.tabs) {
+      const prefixes = config.autoSwitchByModule[tab.key];
+      if (prefixes.some((p) => path.startsWith(p))) return tab.key;
+    }
+    return config.defaultModule;
+  };
+
+  const [module, setModule] = useState<K>(() => getModuleForPath(pathname));
 
   // Hydrate from localStorage after mount so SSR matches initial render.
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "incident" || stored === "rostering") {
-      setModule(stored);
+    const stored = window.localStorage.getItem(config.storageKey);
+    if (stored && config.tabs.some((t) => t.key === stored)) {
+      setModule(stored as K);
     }
-  }, []);
+  }, [config.storageKey, config.tabs]);
 
   // When the URL changes, auto-switch into the matching module so deep
-  // links land on the right menu.
+  // links land on the right menu. Only fire if the path actually maps
+  // to a non-default module — keeps the user's manual choice if they
+  // navigate to a neutral page (e.g. Overview).
   useEffect(() => {
-    const next = getInitialModule(pathname);
-    if (ROSTERING_PREFIXES.some((p) => pathname.startsWith(p))) {
-      setModule(next);
+    for (const tab of config.tabs) {
+      const prefixes = config.autoSwitchByModule[tab.key];
+      if (prefixes.some((p) => pathname.startsWith(p))) {
+        setModule(tab.key);
+        return;
+      }
     }
-  }, [pathname]);
+  }, [pathname, config.tabs, config.autoSwitchByModule]);
 
-  const onPick = (next: ProviderModule) => {
+  const onPick = (next: K) => {
     setModule(next);
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, next);
+      window.localStorage.setItem(config.storageKey, next);
     }
   };
 
-  const allItems =
-    module === "incident" ? PROVIDER_INCIDENT_NAV : PROVIDER_ROSTERING_NAV;
+  const activeTab = config.tabs.find((t) => t.key === module);
+  const allItems = config.itemsByModule[module];
   const items = isManager
     ? allItems
     : allItems.filter((item) => !item.managerOnly);
@@ -244,12 +335,12 @@ function ProviderSidebar({
           value={[module]}
           onValueChange={(vals) => {
             const v = vals[0];
-            if (v === "incident" || v === "rostering") onPick(v);
+            if (config.tabs.some((t) => t.key === v)) onPick(v as K);
           }}
           spacing={4}
           className="w-full rounded-xl bg-muted/70 p-1"
         >
-          {MODULE_TABS.map((tab) => {
+          {config.tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = tab.key === module;
             return (
@@ -259,8 +350,6 @@ function ProviderSidebar({
                 aria-label={tab.label}
                 className={cn(
                   "flex-1 h-auto flex-col items-center gap-1.5 rounded-lg px-2 py-2.5 text-[11px] font-medium transition-all duration-200",
-                  // Override base toggle pressed styles with explicit
-                  // active/inactive states for a cleaner segmented look.
                   isActive
                     ? "!bg-background !text-foreground shadow-sm ring-1 ring-border/60"
                     : "!bg-transparent text-muted-foreground hover:!bg-background/40 hover:!text-foreground"
@@ -284,13 +373,13 @@ function ProviderSidebar({
 
         <nav className="mt-4">
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {module === "incident" ? "Incident Logging" : "Rostering"}
+            {activeTab?.label}
           </p>
           <ul className="space-y-1">
             {items.map((item) => {
               const Icon = item.icon;
               const active =
-                item.href === "/provider"
+                item.href === config.rootHref
                   ? pathname === item.href
                   : pathname.startsWith(item.href);
               return (
@@ -313,51 +402,6 @@ function ProviderSidebar({
           </ul>
         </nav>
       </div>
-    </aside>
-  );
-}
-
-function FlatSidebar({
-  pathname,
-  portal,
-  items,
-}: {
-  pathname: string;
-  portal: PortalKey;
-  items: NavItem[];
-}) {
-  return (
-    <aside className="hidden w-56 shrink-0 border-r bg-sidebar lg:block">
-      <nav className="px-3 py-6">
-        <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          {portal === "provider" ? "Provider" : "Coordinator"}
-        </p>
-        <ul className="space-y-1">
-          {items.map((item) => {
-            const Icon = item.icon;
-            const active =
-              item.href === `/${portal}`
-                ? pathname === item.href
-                : pathname.startsWith(item.href);
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                    active
-                      ? "bg-primary/10 font-medium text-primary"
-                      : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-                  )}
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
     </aside>
   );
 }
