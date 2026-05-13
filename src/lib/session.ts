@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
@@ -7,19 +8,24 @@ import { portalKey, type PortalKey } from "@/lib/portal";
 /**
  * Server-side helpers for resolving the current user, their orgs,
  * and which portal context they're operating in.
+ *
+ * Every async helper here is wrapped in React.cache() so duplicate
+ * calls within the same request (layout → page → header → banner all
+ * call `resolvePortalContext` independently) re-use the first result
+ * instead of redoing the auth + DB work. Big win for page load time.
  */
 
-export async function requireUser() {
+export const requireUser = cache(async () => {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   return session.user;
-}
+});
 
 export type OrgWithEntitlements = Awaited<
   ReturnType<typeof getUserOrgs>
 >[number];
 
-export async function getUserOrgs(userId: string) {
+export const getUserOrgs = cache(async (userId: string) => {
   return db.org.findMany({
     where: {
       memberships: { some: { userId } },
@@ -30,7 +36,7 @@ export async function getUserOrgs(userId: string) {
     },
     orderBy: { legalName: "asc" },
   });
-}
+});
 
 export type ResolvedPortalContext = {
   user: { id: string; email: string | null; name: string | null };
@@ -45,9 +51,9 @@ export type ResolvedPortalContext = {
  * For v1: pick the first org the user is a member of, and confirm it has
  * an entitlement for the requested portal. Multi-org switching comes later.
  */
-export async function resolvePortalContext(
+export const resolvePortalContext = cache(async (
   requested: PortalKey
-): Promise<ResolvedPortalContext> {
+): Promise<ResolvedPortalContext> => {
   const user = await requireUser();
   const orgs = await getUserOrgs(user.id);
 
@@ -85,7 +91,7 @@ export async function resolvePortalContext(
     activePortal: requested,
     availablePortals,
   };
-}
+});
 
 // Q8 (2026-05-12): worker portal context. Workers are linked to a User
 // via Worker.userId, not OrgMembership — admins shouldn't have to invite
@@ -103,7 +109,7 @@ export type ResolvedWorkerContext = {
   org: { id: string; legalName: string; tradingName: string | null };
 };
 
-export async function resolveWorkerContext(): Promise<ResolvedWorkerContext> {
+export const resolveWorkerContext = cache(async (): Promise<ResolvedWorkerContext> => {
   const user = await requireUser();
   const worker = await db.worker.findFirst({
     where: { userId: user.id },
@@ -136,4 +142,4 @@ export async function resolveWorkerContext(): Promise<ResolvedWorkerContext> {
     },
     org: worker.org,
   };
-}
+});
