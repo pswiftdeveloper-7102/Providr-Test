@@ -5,7 +5,7 @@ import { AuthError } from "next-auth";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 
-import { signIn } from "@/auth";
+import { signIn, signOut } from "@/auth";
 import { db } from "@/lib/db";
 
 // PWA login mirrors the web /login action, but lives in its own file so
@@ -63,6 +63,13 @@ export async function appLoginAction(
 
 export async function appGoogleSignInAction() {
   await signIn("google", { redirectTo: "/app" });
+}
+
+// PWA sign out: must land at /app/login, NOT /login. Using the shared
+// signOutAction sends the user to the web portal's login page, and
+// signing in there bounces them to /provider — outside the PWA.
+export async function appSignOutAction() {
+  await signOut({ redirectTo: "/app/login" });
 }
 
 // PWA signup: lightweight version of the web /signup. Creates just the

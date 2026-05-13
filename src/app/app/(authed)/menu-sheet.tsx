@@ -12,7 +12,7 @@ import {
   User,
 } from "lucide-react";
 
-import { signOutAction } from "@/app/(app)/actions";
+import { appSignOutAction } from "@/app/app/actions";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -125,7 +125,7 @@ export function MenuSheet({ user, orgName }: Props) {
               </p>
             )}
           </div>
-          <form action={signOutAction}>
+          <form action={appSignOutAction}>
             <Button
               type="submit"
               variant="outline"

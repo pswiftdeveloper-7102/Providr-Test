@@ -1,6 +1,6 @@
 import { Building2, LogOut, Mail, User } from "lucide-react";
 
-import { signOutAction } from "@/app/(app)/actions";
+import { appSignOutAction } from "@/app/app/actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,7 +50,7 @@ export default async function AppProfilePage() {
         </CardHeader>
       </Card>
 
-      <form action={signOutAction}>
+      <form action={appSignOutAction}>
         <Button
           type="submit"
           variant="outline"
