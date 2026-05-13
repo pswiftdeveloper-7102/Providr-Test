@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { format, formatDistanceStrict } from "date-fns";
+import { Download } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -206,11 +207,24 @@ export default async function AuditPackPage({
             Audit pack
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Point-in-time compliance bundle. Use Print → Save as PDF for a
-            shareable copy.
+            Point-in-time compliance bundle. Download as a server-generated
+            PDF or print this page to save it as a styled snapshot.
           </p>
         </div>
-        <PrintButton />
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            render={
+              <a
+                href={`/api/provider/audit-pack?from=${toDateInput(from)}&to=${toDateInput(to)}`}
+              />
+            }
+          >
+            <Download />
+            Download PDF
+          </Button>
+          <PrintButton />
+        </div>
       </div>
 
       {/* Date range selector — hidden from print */}
