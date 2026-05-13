@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Filter, Search } from "lucide-react";
+import { ChevronRight, Clock, Filter, Search } from "lucide-react";
+import { format } from "date-fns";
 import type { IncidentSeverity, IncidentStatus } from "@prisma/client";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -26,16 +29,6 @@ export type IncidentRowLite = {
   overdue: boolean;
 };
 
-type Props = {
-  rows: IncidentRowLite[];
-  labels: {
-    severity: Record<IncidentSeverity, unknown>;
-    status: Record<IncidentStatus, string>;
-  };
-  renderRow: (r: IncidentRowLite) => React.ReactNode;
-  emptyState: React.ReactNode;
-};
-
 const SEVERITY_LABEL: Record<IncidentSeverity, string> = {
   MINOR: "Minor",
   MODERATE: "Moderate",
@@ -43,7 +36,24 @@ const SEVERITY_LABEL: Record<IncidentSeverity, string> = {
   REPORTABLE: "Reportable",
 };
 
-export function IncidentsFilter({ rows, labels, renderRow, emptyState }: Props) {
+const SEVERITY_VARIANT: Record<
+  IncidentSeverity,
+  "default" | "secondary" | "outline" | "destructive"
+> = {
+  MINOR: "outline",
+  MODERATE: "secondary",
+  SERIOUS: "default",
+  REPORTABLE: "destructive",
+};
+
+const STATUS_LABEL: Record<IncidentStatus, string> = {
+  DRAFT: "Draft",
+  REPORTED: "Reported",
+  UNDER_REVIEW: "Under review",
+  CLOSED: "Closed",
+};
+
+export function IncidentsFilter({ rows }: { rows: IncidentRowLite[] }) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<Set<IncidentStatus>>(
     new Set()
@@ -124,7 +134,7 @@ export function IncidentsFilter({ rows, labels, renderRow, emptyState }: Props) 
             ))}
             <DropdownMenuSeparator />
             <DropdownMenuLabel>Status</DropdownMenuLabel>
-            {(Object.keys(labels.status) as IncidentStatus[]).map((s) => (
+            {(Object.keys(STATUS_LABEL) as IncidentStatus[]).map((s) => (
               <DropdownMenuCheckboxItem
                 key={s}
                 checked={statusFilter.has(s)}
@@ -132,7 +142,7 @@ export function IncidentsFilter({ rows, labels, renderRow, emptyState }: Props) 
                   toggle(statusFilter, setStatusFilter, s)
                 }
               >
-                {labels.status[s]}
+                {STATUS_LABEL[s]}
               </DropdownMenuCheckboxItem>
             ))}
           </DropdownMenuContent>
@@ -140,11 +150,50 @@ export function IncidentsFilter({ rows, labels, renderRow, emptyState }: Props) 
       </div>
 
       {filtered.length === 0 ? (
-        emptyState
+        <Card>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">
+            No incidents match those filters.
+          </CardContent>
+        </Card>
       ) : (
         <ul className="space-y-2">
           {filtered.map((r) => (
-            <li key={r.id}>{renderRow(r)}</li>
+            <li key={r.id}>
+              <Link
+                href={`/app/incidents/${r.id}`}
+                className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm transition-colors active:bg-muted"
+              >
+                <div className="flex flex-1 flex-col gap-1.5 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-[10px] font-medium text-primary">
+                      {r.number}
+                    </span>
+                    <Badge
+                      variant={SEVERITY_VARIANT[r.severity]}
+                      className="text-[10px]"
+                    >
+                      {r.severity.toLowerCase()}
+                    </Badge>
+                    <Badge variant="outline" className="text-[10px]">
+                      {STATUS_LABEL[r.status]}
+                    </Badge>
+                    {r.overdue && (
+                      <Badge variant="destructive" className="text-[10px]">
+                        overdue
+                      </Badge>
+                    )}
+                  </div>
+                  <span className="truncate text-sm font-medium">
+                    {r.participantName ?? "Unspecified participant"}
+                  </span>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Clock className="h-3.5 w-3.5" />
+                    {format(new Date(r.occurredAt), "dd/MM/yyyy, h:mm a")}
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+              </Link>
+            </li>
           ))}
         </ul>
       )}
