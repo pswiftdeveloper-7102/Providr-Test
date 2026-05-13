@@ -9,7 +9,7 @@ import { AppSignupForm } from "./app-signup-form";
 
 export default async function AppSignupPage() {
   const session = await auth();
-  if (session?.user) redirect("/");
+  if (session?.user) redirect("/app");
 
   return (
     <AppAuthLayout

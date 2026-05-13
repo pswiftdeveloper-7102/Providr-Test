@@ -10,7 +10,7 @@ import { AppLoginForm } from "./app-login-form";
 export default async function AppLoginPage() {
   // Already signed in? Skip the form.
   const session = await auth();
-  if (session?.user) redirect("/");
+  if (session?.user) redirect("/app");
 
   return (
     <AppAuthLayout

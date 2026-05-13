@@ -58,11 +58,11 @@ export async function appLoginAction(
 
   // Root page dispatches workers → /worker, org members → /provider or
   // /sc, no-org users → /no-org.
-  redirect("/");
+  redirect("/app");
 }
 
 export async function appGoogleSignInAction() {
-  await signIn("google", { redirectTo: "/" });
+  await signIn("google", { redirectTo: "/app" });
 }
 
 // PWA signup: lightweight version of the web /signup. Creates just the
@@ -146,5 +146,5 @@ export async function appSignupAction(
     };
   }
 
-  redirect("/");
+  redirect("/app");
 }
