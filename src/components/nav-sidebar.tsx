@@ -161,7 +161,7 @@ const MODULE_TABS: Array<{
   label: string;
   icon: LucideIcon;
 }> = [
-  { key: "incident", label: "Incident Management", icon: ShieldAlert },
+  { key: "incident", label: "Incident Logging", icon: ShieldAlert },
   { key: "rostering", label: "Rostering", icon: CalendarClock },
 ];
 
@@ -284,7 +284,7 @@ function ProviderSidebar({
 
         <nav className="mt-4">
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-            {module === "incident" ? "Incident Management" : "Rostering"}
+            {module === "incident" ? "Incident Logging" : "Rostering"}
           </p>
           <ul className="space-y-1">
             {items.map((item) => {

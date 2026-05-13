@@ -20,7 +20,7 @@ const TABS: Record<PortalKey, Tab[]> = {
     {
       key: "incident",
       href: "/provider/incidents",
-      label: "Incident Management",
+      label: "Incident Logging",
       icon: ShieldAlert,
       match: ["/provider/incidents"],
     },
@@ -36,7 +36,7 @@ const TABS: Record<PortalKey, Tab[]> = {
     {
       key: "incident",
       href: "/sc/escalations",
-      label: "Incident Management",
+      label: "Incident Logging",
       icon: ShieldAlert,
       match: ["/sc/escalations"],
     },
