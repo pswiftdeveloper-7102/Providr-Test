@@ -94,6 +94,7 @@ export function MenuSheet({ user, orgName }: Props) {
               return (
                 <li key={item.href}>
                   <SheetClose
+                    nativeButton={false}
                     render={
                       <Link
                         href={item.href}

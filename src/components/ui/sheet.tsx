@@ -69,27 +69,29 @@ function SheetContent({
 }) {
   return (
     <SheetPortal>
-      <SheetBackdrop />
-      <DrawerPrimitive.Popup
-        data-slot="sheet-content"
-        className={cn(
-          "fixed z-50 flex flex-col bg-background shadow-xl outline-none",
-          "transition-transform duration-200 ease-out",
-          sideClasses[side],
-          className
-        )}
-        {...props}
-      >
-        {children}
-        {showClose && (
-          <DrawerPrimitive.Close
-            className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            aria-label="Close"
-          >
-            <X className="h-4 w-4" />
-          </DrawerPrimitive.Close>
-        )}
-      </DrawerPrimitive.Popup>
+      <DrawerPrimitive.Viewport className="fixed inset-0 z-50">
+        <SheetBackdrop />
+        <DrawerPrimitive.Popup
+          data-slot="sheet-content"
+          className={cn(
+            "fixed z-50 flex flex-col bg-background shadow-xl outline-none",
+            "transition-transform duration-200 ease-out",
+            sideClasses[side],
+            className
+          )}
+          {...props}
+        >
+          {children}
+          {showClose && (
+            <DrawerPrimitive.Close
+              className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </DrawerPrimitive.Close>
+          )}
+        </DrawerPrimitive.Popup>
+      </DrawerPrimitive.Viewport>
     </SheetPortal>
   );
 }
