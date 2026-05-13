@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Home, ListChecks, Plus, User } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ProvidrLogo } from "@/components/providr-logo";
-import { cn } from "@/lib/utils";
 import { resolvePortalContext } from "@/lib/session";
 
+import { BottomNav } from "./bottom-nav";
 import { MenuSheet } from "./menu-sheet";
 
 // Mobile-first PWA shell. Top bar with hamburger (left), centred logo,
@@ -71,39 +71,7 @@ export default async function AppAuthedLayout({
         </div>
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white/95 backdrop-blur">
-        <div className="mx-auto grid w-full max-w-md grid-cols-3 items-stretch px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
-          <NavTab href="/app" icon={Home} label="Home" />
-          <NavTab href="/app/incidents" icon={ListChecks} label="Incidents" />
-          <NavTab href="/app/profile" icon={User} label="Profile" />
-        </div>
-      </nav>
+      <BottomNav />
     </div>
-  );
-}
-
-function NavTab({
-  href,
-  icon: Icon,
-  label,
-}: {
-  href: string;
-  icon: typeof Home;
-  label: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "flex flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-1.5 text-[11px] transition-colors",
-        "text-muted-foreground hover:bg-muted hover:text-foreground"
-      )}
-      aria-label={label}
-    >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full">
-        <Icon className="h-5 w-5" />
-      </span>
-      <span>{label}</span>
-    </Link>
   );
 }
