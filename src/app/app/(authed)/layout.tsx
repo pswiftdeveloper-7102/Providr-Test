@@ -6,6 +6,8 @@ import { ProvidrLogo } from "@/components/providr-logo";
 import { cn } from "@/lib/utils";
 import { resolvePortalContext } from "@/lib/session";
 
+import { MenuSheet } from "./menu-sheet";
+
 // Mobile-first PWA shell. Top bar with logo + org, bottom tab nav with
 // 4 evenly-spaced tabs (Home / Incidents / Report / Profile). No
 // sidebar, no portal switcher — incident-only by design.
@@ -19,13 +21,24 @@ export default async function AppAuthedLayout({
   return (
     <div className="flex min-h-svh flex-col bg-muted/30">
       <header className="sticky top-0 z-20 border-b bg-white/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-md items-center justify-between px-4 py-3">
-          <Link href="/app" className="flex items-center gap-2">
-            <ProvidrLogo height={24} />
-            <span className="text-xs text-muted-foreground">
-              {context.activeOrg.tradingName ?? context.activeOrg.legalName}
-            </span>
-          </Link>
+        <div className="mx-auto flex w-full max-w-md items-center justify-between gap-2 px-3 py-3">
+          <div className="flex items-center gap-2">
+            <MenuSheet
+              user={{
+                name: context.user.name ?? null,
+                email: context.user.email ?? null,
+              }}
+              orgName={
+                context.activeOrg.tradingName ?? context.activeOrg.legalName
+              }
+            />
+            <Link href="/app" className="flex items-center gap-2">
+              <ProvidrLogo height={24} />
+            </Link>
+          </div>
+          <span className="truncate text-xs text-muted-foreground">
+            {context.activeOrg.tradingName ?? context.activeOrg.legalName}
+          </span>
         </div>
       </header>
 

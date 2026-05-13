@@ -13,8 +13,8 @@ export default async function AppSignupPage() {
 
   return (
     <AppAuthLayout
-      title="Create your account"
-      subtitle="Set yourself up — finish your organisation later on desktop"
+      title="Incident Logging"
+      subtitle="Create your account to start logging and tracking incidents."
       footer={
         <p className="text-sm text-muted-foreground">
           Already have an account?{" "}

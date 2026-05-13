@@ -14,8 +14,8 @@ export default async function AppLoginPage() {
 
   return (
     <AppAuthLayout
-      title="Welcome back"
-      subtitle="Sign in to continue"
+      title="Incident Logging"
+      subtitle="Sign in to your account to log and track incidents."
       footer={
         <p className="text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
