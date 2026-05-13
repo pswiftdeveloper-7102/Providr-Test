@@ -247,22 +247,35 @@ function ProviderSidebar({
             if (v === "incident" || v === "rostering") onPick(v);
           }}
           spacing={4}
-          className="w-full rounded-xl bg-muted p-1"
+          className="w-full rounded-xl bg-muted/70 p-1"
         >
           {MODULE_TABS.map((tab) => {
             const Icon = tab.icon;
+            const isActive = tab.key === module;
             return (
               <ToggleGroupItem
                 key={tab.key}
                 value={tab.key}
                 aria-label={tab.label}
                 className={cn(
-                  "flex-1 flex-col items-center gap-1 rounded-lg px-2 py-2 text-[11px] font-medium",
-                  "data-[pressed]:bg-primary/10 data-[pressed]:text-primary",
-                  "h-auto"
+                  "flex-1 h-auto flex-col items-center gap-1.5 rounded-lg px-2 py-2.5 text-[11px] font-medium transition-all duration-200",
+                  // Override base toggle pressed styles with explicit
+                  // active/inactive states for a cleaner segmented look.
+                  isActive
+                    ? "!bg-background !text-foreground shadow-sm ring-1 ring-border/60"
+                    : "!bg-transparent text-muted-foreground hover:!bg-background/40 hover:!text-foreground"
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <span
+                  className={cn(
+                    "flex h-7 w-7 items-center justify-center rounded-md transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "bg-transparent text-muted-foreground"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                </span>
                 <span className="text-center leading-tight">{tab.label}</span>
               </ToggleGroupItem>
             );
