@@ -1,9 +1,11 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ProvidrLogo } from "@/components/providr-logo";
+import { auth } from "@/auth";
 import { resolvePortalContext } from "@/lib/session";
 
 import { BottomNav } from "./bottom-nav";
@@ -18,6 +20,13 @@ export default async function AppAuthedLayout({
 }: {
   children: ReactNode;
 }) {
+  // PWA-specific auth guard: signed-out users go to /app/login (the
+  // PWA's own auth surface), NOT /login (the web auth flow). The
+  // shared resolvePortalContext would otherwise call requireUser
+  // which redirects to /login.
+  const session = await auth();
+  if (!session?.user?.id) redirect("/app/login");
+
   const context = await resolvePortalContext("provider");
   const orgName = context.activeOrg.tradingName ?? context.activeOrg.legalName;
 
