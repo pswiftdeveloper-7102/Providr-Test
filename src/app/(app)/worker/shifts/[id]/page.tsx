@@ -52,6 +52,12 @@ export default async function WorkerShiftPage({
             select: {
               id: true,
               summary: true,
+              communicationPreferences: true,
+              medicalConditions: true,
+              allergies: true,
+              risks: true,
+              emergencyContacts: true,
+              culturalConsiderations: true,
               goals: {
                 select: { id: true, title: true, description: true },
                 orderBy: { createdAt: "asc" },
@@ -81,6 +87,30 @@ export default async function WorkerShiftPage({
 
   const carePlan = shift.participant.carePlans[0];
   const bsp = shift.participant.behaviourSupportPlans[0];
+
+  // Surface the most recent handover note from a prior shift for this
+  // participant so the worker reads what the last shift left behind
+  // without hunting for it.
+  const previousHandover = await db.progressNote.findFirst({
+    where: {
+      isHandover: true,
+      shift: {
+        participantId: shift.participant.id,
+        orgId: context.worker.orgId,
+        id: { not: shift.id },
+        scheduledStart: { lt: shift.scheduledStart },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      shift: {
+        select: {
+          scheduledStart: true,
+          worker: { select: { firstName: true, lastName: true } },
+        },
+      },
+    },
+  });
 
   return (
     <div className="space-y-4">
@@ -123,6 +153,27 @@ export default async function WorkerShiftPage({
         actualEnd={shift.actualEnd}
       />
 
+      {previousHandover && shift.status !== "COMPLETED" && (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <CardHeader>
+            <CardTitle className="text-base">Previous handover</CardTitle>
+            <CardDescription>
+              From {previousHandover.shift.worker.firstName}{" "}
+              {previousHandover.shift.worker.lastName} ·{" "}
+              {format(
+                previousHandover.shift.scheduledStart,
+                "dd MMM, h:mm a"
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="whitespace-pre-wrap text-sm">
+              {previousHandover.body}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {(carePlan || bsp) && (
         <Card>
           <CardHeader>
@@ -141,6 +192,62 @@ export default async function WorkerShiftPage({
                   Care plan summary
                 </p>
                 <p className="mt-1 whitespace-pre-wrap">{carePlan.summary}</p>
+              </div>
+            )}
+            {carePlan?.communicationPreferences && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Communication preferences
+                </p>
+                <p className="mt-1 whitespace-pre-wrap">
+                  {carePlan.communicationPreferences}
+                </p>
+              </div>
+            )}
+            {carePlan?.medicalConditions && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Medical conditions
+                </p>
+                <p className="mt-1 whitespace-pre-wrap">
+                  {carePlan.medicalConditions}
+                </p>
+              </div>
+            )}
+            {carePlan?.allergies && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Allergies
+                </p>
+                <p className="mt-1 whitespace-pre-wrap">{carePlan.allergies}</p>
+              </div>
+            )}
+            {carePlan?.risks && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Risks
+                </p>
+                <p className="mt-1 whitespace-pre-wrap">{carePlan.risks}</p>
+              </div>
+            )}
+            {carePlan?.emergencyContacts && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Emergency contacts
+                </p>
+                <p className="mt-1 whitespace-pre-wrap">
+                  {carePlan.emergencyContacts}
+                </p>
+              </div>
+            )}
+            {carePlan?.culturalConsiderations && (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Cultural considerations
+                </p>
+                <p className="mt-1 whitespace-pre-wrap">
+                  {carePlan.culturalConsiderations}
+                </p>
               </div>
             )}
             {carePlan && carePlan.goals.length > 0 && (

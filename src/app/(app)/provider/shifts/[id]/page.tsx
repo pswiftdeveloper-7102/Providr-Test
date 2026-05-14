@@ -94,6 +94,31 @@ export default async function ShiftDetailPage({
     orderBy: { usedAt: "desc" },
   });
 
+  // Paperwork-friction #2: the most recent handover note from a prior
+  // shift for this participant. Surfaced at the top of the shift detail
+  // so the new worker can read what the previous worker left behind
+  // without hunting through past shifts.
+  const previousHandover = await db.progressNote.findFirst({
+    where: {
+      isHandover: true,
+      shift: {
+        participantId: shift.participantId,
+        orgId: context.activeOrg.id,
+        id: { not: shift.id },
+        scheduledStart: { lt: shift.scheduledStart },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      shift: {
+        select: {
+          scheduledStart: true,
+          worker: { select: { firstName: true, lastName: true } },
+        },
+      },
+    },
+  });
+
   // Q4 paperwork-friction #3: PRN doses sometimes get logged without their
   // outcome (because the medication hasn't taken effect yet). Surface a
   // gentle reminder while the shift is still in progress.
@@ -145,6 +170,33 @@ export default async function ShiftDetailPage({
           View care plan & BSP
         </Button>
       </div>
+
+      {(shift.status === "SCHEDULED" || shift.status === "IN_PROGRESS") &&
+        previousHandover && (
+          <Card className="border-amber-200 bg-amber-50/40">
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <HandHelping className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+                <div>
+                  <CardTitle className="text-base">Previous handover</CardTitle>
+                  <CardDescription>
+                    From {previousHandover.shift.worker.firstName}{" "}
+                    {previousHandover.shift.worker.lastName} ·{" "}
+                    {format(
+                      previousHandover.shift.scheduledStart,
+                      "dd MMM, h:mm a"
+                    )}
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-wrap text-sm">
+                {previousHandover.body}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
       {shift.status === "IN_PROGRESS" && prnPendingOutcome.length > 0 && (
         <Alert>
