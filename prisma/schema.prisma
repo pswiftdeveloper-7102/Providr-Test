@@ -18,7 +18,7 @@ enum Portal {
   PROVIDER
   SC
   // Q8 (2026-05-12): support workers get their own logins to use the
-  // worker portal at /worker — own roster, clock-in, voice-to-text notes.
+  // Worker App at /app — own roster, voice-to-text notes, incident logging.
   WORKER
 }
 

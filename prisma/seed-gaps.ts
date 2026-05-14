@@ -161,8 +161,8 @@ async function main() {
   console.log("                  + 'PRN dose without outcome' alerts.");
   console.log(`                  /provider/shifts/${SEED_SHIFT_B_ID}`);
   console.log("");
-  console.log("  Worker portal equivalent of Shift B:");
-  console.log(`                  /worker/shifts/${SEED_SHIFT_B_ID}`);
+  console.log("  Worker App equivalent of Shift B:");
+  console.log(`                  /app/shifts/${SEED_SHIFT_B_ID}`);
   console.log("  (Sign in as dave@acme.test / password123.)\n");
 }
 

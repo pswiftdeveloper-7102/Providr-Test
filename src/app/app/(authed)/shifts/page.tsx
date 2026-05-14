@@ -10,8 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { resolveWorkerContext } from "@/lib/session";
+import { resolvePortalContext } from "@/lib/session";
 
 function dayLabel(d: Date): string {
   if (isToday(d)) return "Today";
@@ -29,24 +30,44 @@ const STATUS_VARIANT: Record<
   CANCELLED: "destructive",
 };
 
-export default async function WorkerHomePage() {
-  const context = await resolveWorkerContext();
+export default async function AppShiftsPage() {
+  const context = await resolvePortalContext("provider");
+  const session = await auth();
+  const userId = session?.user?.id;
   const fromDay = startOfDay(new Date());
 
-  const shifts = await db.shift.findMany({
-    where: {
-      workerId: context.worker.id,
-      scheduledEnd: { gte: fromDay },
-      status: { in: ["SCHEDULED", "IN_PROGRESS"] },
-    },
-    include: {
-      participant: {
-        select: { id: true, firstName: true, lastName: true, address: true },
-      },
-    },
-    orderBy: { scheduledStart: "asc" },
-    take: 30,
-  });
+  // The PWA is the Worker App, so the shifts list is scoped to the
+  // current user's linked Worker row. Managers without a Worker row
+  // see an empty list — they should use the web portal for full
+  // roster visibility.
+  const worker = userId
+    ? await db.worker.findFirst({
+        where: { userId, orgId: context.activeOrg.id },
+        select: { id: true },
+      })
+    : null;
+
+  const shifts = worker
+    ? await db.shift.findMany({
+        where: {
+          workerId: worker.id,
+          scheduledEnd: { gte: fromDay },
+          status: { in: ["SCHEDULED", "IN_PROGRESS"] },
+        },
+        include: {
+          participant: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              address: true,
+            },
+          },
+        },
+        orderBy: { scheduledStart: "asc" },
+        take: 30,
+      })
+    : [];
 
   // Group by day so the list reads like a calendar.
   const byDay = new Map<string, typeof shifts>();
@@ -64,11 +85,22 @@ export default async function WorkerHomePage() {
           Upcoming shifts
         </h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          Your roster — clock in when you arrive.
+          Your roster — open a shift to view the care plan and write notes.
         </p>
       </header>
 
-      {shifts.length === 0 ? (
+      {!worker ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">No worker profile</CardTitle>
+            <CardDescription>
+              You&apos;re signed in as a manager. The shifts list is for
+              support workers — head to the web portal at /provider/shifts
+              for full roster visibility.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : shifts.length === 0 ? (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Nothing scheduled</CardTitle>
@@ -88,10 +120,10 @@ export default async function WorkerHomePage() {
               {dayShifts.map((s) => (
                 <li key={s.id}>
                   <Link
-                    href={`/worker/shifts/${s.id}`}
+                    href={`/app/shifts/${s.id}`}
                     className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm transition-colors active:bg-muted"
                   >
-                    <div className="flex flex-1 flex-col gap-1.5">
+                    <div className="flex flex-1 flex-col gap-1.5 min-w-0">
                       <div className="flex items-center gap-2">
                         <Badge
                           variant={STATUS_VARIANT[s.status] ?? "outline"}

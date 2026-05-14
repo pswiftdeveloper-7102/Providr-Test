@@ -56,8 +56,8 @@ export async function appLoginAction(
     throw err;
   }
 
-  // Root page dispatches workers → /worker, org members → /provider or
-  // /sc, no-org users → /no-org.
+  // The PWA is the Worker App — drop everyone here after sign-in. Root
+  // page dispatches non-worker org members to /provider or /sc.
   redirect("/app");
 }
 

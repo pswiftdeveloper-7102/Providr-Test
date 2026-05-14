@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
   Home,
   ListChecks,
   LogOut,
@@ -33,6 +34,12 @@ type Props = {
 
 const ITEMS = [
   { href: "/app", label: "Home", icon: Home, match: ["/app"] as string[] },
+  {
+    href: "/app/shifts",
+    label: "Shifts",
+    icon: CalendarDays,
+    match: ["/app/shifts"],
+  },
   {
     href: "/app/incidents",
     label: "Incidents",

@@ -55,7 +55,7 @@ export function InvitePanel({
           <CardTitle className="text-base">Worker login</CardTitle>
           <CardDescription>
             {workerFirstName} has claimed a login and can sign into the
-            worker portal at /worker.
+            Worker App at /app.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -65,7 +65,7 @@ export function InvitePanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Invite to the worker portal</CardTitle>
+        <CardTitle className="text-base">Invite to the Worker App</CardTitle>
         <CardDescription>
           Generate a one-time link {workerFirstName} can use to set a
           password and sign in. Links expire after 14 days.

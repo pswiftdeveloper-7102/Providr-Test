@@ -15,6 +15,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
+import { isSupportWorkerOnly } from "@/lib/rbac";
 import { clockState, formatDuration } from "@/lib/incident-clock";
 import type {
   IncidentSeverity,
@@ -61,10 +62,24 @@ export default async function AppIncidentDetailPage({
   const incident = await db.incident.findFirst({
     where: { id, orgId: context.activeOrg.id },
     include: {
-      participant: { select: { firstName: true, lastName: true } },
+      participant: { select: { id: true, firstName: true, lastName: true } },
     },
   });
   if (!incident) notFound();
+
+  // Support-worker-only users can only view incidents for participants
+  // they have access to. Treat denial as not-found so the URL doesn't
+  // leak that the incident exists.
+  if (isSupportWorkerOnly(context) && incident.participant) {
+    const grant = await db.workerParticipant.findFirst({
+      where: {
+        participantId: incident.participant.id,
+        worker: { userId: context.user.id, orgId: context.activeOrg.id },
+      },
+      select: { id: true },
+    });
+    if (!grant) notFound();
+  }
 
   const now = new Date();
   const state = clockState(incident, now);

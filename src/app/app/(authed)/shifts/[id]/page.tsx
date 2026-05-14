@@ -16,7 +16,6 @@ import { Separator } from "@/components/ui/separator";
 import { db } from "@/lib/db";
 import { resolveWorkerContext } from "@/lib/session";
 
-import { ClockInOutPanel } from "./clock-in-out-panel";
 import { ProgressNoteForm } from "./progress-note-form";
 
 const STATUS_VARIANT: Record<
@@ -29,7 +28,7 @@ const STATUS_VARIANT: Record<
   CANCELLED: "destructive",
 };
 
-export default async function WorkerShiftPage({
+export default async function AppShiftDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -118,10 +117,10 @@ export default async function WorkerShiftPage({
         variant="ghost"
         size="sm"
         className="-ml-2"
-        render={<Link href="/worker" />}
+        render={<Link href="/app/shifts" />}
       >
         <ArrowLeft />
-        Back to roster
+        Back to shifts
       </Button>
 
       <header className="space-y-2">
@@ -145,13 +144,6 @@ export default async function WorkerShiftPage({
           </div>
         )}
       </header>
-
-      <ClockInOutPanel
-        shiftId={shift.id}
-        status={shift.status}
-        actualStart={shift.actualStart}
-        actualEnd={shift.actualEnd}
-      />
 
       {previousHandover && shift.status !== "COMPLETED" && (
         <Card className="border-amber-200 bg-amber-50/40">

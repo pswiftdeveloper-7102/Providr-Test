@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ListChecks, User, type LucideIcon } from "lucide-react";
+import { CalendarDays, Home, ListChecks, User, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,12 @@ type Item = {
 
 const ITEMS: Item[] = [
   { href: "/app", icon: Home, label: "Home", match: [] },
+  {
+    href: "/app/shifts",
+    icon: CalendarDays,
+    label: "Shifts",
+    match: ["/app/shifts"],
+  },
   {
     href: "/app/incidents",
     icon: ListChecks,
@@ -36,7 +42,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-20 border-t bg-white/95 backdrop-blur">
-      <div className="mx-auto grid w-full max-w-md grid-cols-3 items-stretch px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto grid w-full max-w-md grid-cols-4 items-stretch px-2 py-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]">
         {ITEMS.map((item) => {
           const Icon = item.icon;
           const active =

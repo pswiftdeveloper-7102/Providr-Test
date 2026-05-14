@@ -2,18 +2,14 @@ import Link from "next/link";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { db } from "@/lib/db";
+import { getAccessibleParticipants } from "@/lib/participant-access";
 import { resolvePortalContext } from "@/lib/session";
 
 import { AppQuickForm } from "./app-quick-form";
 
 export default async function AppQuickPage() {
   const context = await resolvePortalContext("provider");
-  const participants = await db.participant.findMany({
-    where: { orgId: context.activeOrg.id },
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-    select: { id: true, firstName: true, lastName: true },
-  });
+  const participants = await getAccessibleParticipants(context);
 
   return (
     <div className="space-y-5">

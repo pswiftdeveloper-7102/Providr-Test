@@ -24,10 +24,10 @@ export default async function WorkerInvitePage({
     <div className="mx-auto flex min-h-svh max-w-md flex-col justify-center px-6 py-10">
       <Card>
         <CardHeader>
-          <CardTitle>Welcome to Providr</CardTitle>
+          <CardTitle>Welcome to the Worker App</CardTitle>
           <CardDescription>
             {check.ok
-              ? `Hi ${check.workerName}, set a password to access your shifts.`
+              ? `Hi ${check.workerName}, set a password to access your shifts and log incidents.`
               : "We couldn't accept this invite."}
           </CardDescription>
         </CardHeader>
@@ -40,9 +40,9 @@ export default async function WorkerInvitePage({
               <Button
                 variant="outline"
                 size="sm"
-                render={<Link href="/login" />}
+                render={<Link href="/app/login" />}
               >
-                Go to sign in
+                Go to Worker App sign in
               </Button>
             </div>
           )}

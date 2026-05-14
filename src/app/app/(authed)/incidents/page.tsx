@@ -4,6 +4,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
+import { isSupportWorkerOnly } from "@/lib/rbac";
 import { clockState } from "@/lib/incident-clock";
 
 import { IncidentsFilter, type IncidentRowLite } from "./incidents-filter";
@@ -13,8 +14,26 @@ export default async function AppIncidentsListPage() {
   const orgId = context.activeOrg.id;
   const now = new Date();
 
+  // Support-worker-only users only see incidents for participants
+  // they've been granted access to via WorkerParticipant. Managers
+  // see every incident in the org.
+  let participantIdFilter: { in: string[] } | undefined;
+  if (isSupportWorkerOnly(context)) {
+    const worker = await db.worker.findFirst({
+      where: { userId: context.user.id, orgId },
+      select: {
+        participantAccess: { select: { participantId: true } },
+      },
+    });
+    const ids = worker?.participantAccess.map((wp) => wp.participantId) ?? [];
+    participantIdFilter = { in: ids };
+  }
+
   const incidents = await db.incident.findMany({
-    where: { orgId },
+    where: {
+      orgId,
+      ...(participantIdFilter ? { participantId: participantIdFilter } : {}),
+    },
     include: {
       participant: { select: { firstName: true, lastName: true } },
     },

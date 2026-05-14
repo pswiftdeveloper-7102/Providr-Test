@@ -36,11 +36,11 @@ export function AcceptInviteForm({
         <AlertTitle>You&apos;re all set</AlertTitle>
         <AlertDescription className="space-y-3">
           <p>
-            Sign in with {state.workerEmail ?? email} and the password you
-            just created.
+            Sign in to the Worker App with {state.workerEmail ?? email} and
+            the password you just created.
           </p>
-          <Button size="sm" render={<Link href="/login" />}>
-            Sign in
+          <Button size="sm" render={<Link href="/app/login" />}>
+            Open Worker App
           </Button>
         </AlertDescription>
       </Alert>

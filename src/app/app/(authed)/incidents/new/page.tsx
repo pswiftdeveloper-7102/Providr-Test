@@ -18,7 +18,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { resolvePortalContext } from "@/lib/session";
-import { requireManager } from "@/lib/rbac";
 import { cn } from "@/lib/utils";
 
 type Mode = {
@@ -58,8 +57,7 @@ const MODES: Mode[] = [
 ];
 
 export default async function AppPickerPage() {
-  const context = await resolvePortalContext("provider");
-  requireManager(context);
+  await resolvePortalContext("provider");
 
   return (
     <div className="space-y-5">

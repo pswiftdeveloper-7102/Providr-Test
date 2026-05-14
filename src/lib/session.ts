@@ -93,10 +93,11 @@ export const resolvePortalContext = cache(async (
   };
 });
 
-// Q8 (2026-05-12): worker portal context. Workers are linked to a User
-// via Worker.userId, not OrgMembership — admins shouldn't have to invite
-// them as full org members to give them a login. This helper enforces the
-// link and returns the worker + their org for the /worker portal.
+// Q8 (2026-05-12): worker context for the Worker App at /app. Workers
+// are linked to a User via Worker.userId — the invite flow also creates
+// an OrgMembership so resolvePortalContext("provider") works inside the
+// PWA shell. This helper is used by routes that need the Worker row
+// itself (shift detail, progress notes, etc.).
 export type ResolvedWorkerContext = {
   user: { id: string; email: string | null; name: string | null };
   worker: {

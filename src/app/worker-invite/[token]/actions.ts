@@ -51,7 +51,9 @@ export async function acceptWorkerInviteAction(
   const invite = await db.workerInvite.findUnique({
     where: { tokenHash },
     include: {
-      worker: { select: { id: true, firstName: true, lastName: true } },
+      worker: {
+        select: { id: true, firstName: true, lastName: true, orgId: true },
+      },
     },
   });
   if (!invite || invite.acceptedAt || invite.expiresAt < new Date()) {
@@ -96,6 +98,19 @@ export async function acceptWorkerInviteAction(
     await tx.workerInvite.update({
       where: { id: invite.id },
       data: { acceptedAt: new Date() },
+    });
+    // Workers need an OrgMembership so resolvePortalContext("provider")
+    // accepts them in /app. Without this they'd land on /no-org.
+    await tx.orgMembership.upsert({
+      where: {
+        userId_orgId: { userId, orgId: invite.worker.orgId },
+      },
+      update: {},
+      create: {
+        userId,
+        orgId: invite.worker.orgId,
+        roles: ["SUPPORT_WORKER"],
+      },
     });
   });
 
