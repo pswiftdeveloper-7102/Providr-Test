@@ -61,6 +61,9 @@ export function AppQuickForm({
   const [participantId, setParticipantId] = useState("");
   const [incidentType, setIncidentType] = useState("");
   const [severity, setSeverity] = useState("");
+  // Lazy-init so re-renders don't flip the default — Base UI warns on
+  // uncontrolled FieldControl default-value changes.
+  const [initialDateTime] = useState(() => nowLocalIso());
 
   return (
     <form action={dispatch}>
@@ -94,7 +97,7 @@ export function AppQuickForm({
               id="occurredAt"
               name="occurredAt"
               type="datetime-local"
-              defaultValue={nowLocalIso()}
+              defaultValue={initialDateTime}
               required
               aria-invalid={!!state.fieldErrors?.occurredAt}
             />

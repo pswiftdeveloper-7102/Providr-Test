@@ -43,6 +43,7 @@ export function LogRestraintForm({ shiftId }: { shiftId: string }) {
   );
   const formRef = useRef<HTMLFormElement>(null);
   const [type, setType] = useState<RType>("PHYSICAL");
+  const [initialDateTime] = useState(() => nowLocalIso());
 
   useEffect(() => {
     if (state.ok) {
@@ -83,7 +84,7 @@ export function LogRestraintForm({ shiftId }: { shiftId: string }) {
             id="restraint-when"
             name="usedAt"
             type="datetime-local"
-            defaultValue={nowLocalIso()}
+            defaultValue={initialDateTime}
             aria-invalid={!!state.fieldErrors?.usedAt}
             required
           />

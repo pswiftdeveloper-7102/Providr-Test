@@ -65,6 +65,7 @@ export function QuickReportForm({ participants }: { participants: Participant[] 
   const [participantId, setParticipantId] = useState("");
   const [incidentType, setIncidentType] = useState("");
   const [severity, setSeverity] = useState("");
+  const [initialDateTime] = useState(() => nowLocalIso());
 
   return (
     <form action={dispatch}>
@@ -104,7 +105,7 @@ export function QuickReportForm({ participants }: { participants: Participant[] 
               id="occurredAt"
               name="occurredAt"
               type="datetime-local"
-              defaultValue={nowLocalIso()}
+              defaultValue={initialDateTime}
               required
               aria-invalid={!!state.fieldErrors?.occurredAt}
             />

@@ -53,6 +53,7 @@ export function AddMarForm({ shiftId }: { shiftId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [status, setStatus] = useState<Status>("GIVEN");
   const [isPrn, setIsPrn] = useState(false);
+  const [initialDateTime] = useState(() => nowLocalIso());
 
   useEffect(() => {
     if (state.ok) {
@@ -109,7 +110,7 @@ export function AddMarForm({ shiftId }: { shiftId: string }) {
           id="givenAt"
           name="givenAt"
           type="datetime-local"
-          defaultValue={nowLocalIso()}
+          defaultValue={initialDateTime}
           aria-invalid={!!state.fieldErrors?.givenAt}
           required
         />

@@ -62,6 +62,7 @@ export function CommunicationLogForm({
   );
   const [direction, setDirection] = useState<Direction>("INBOUND");
   const [channel, setChannel] = useState<Channel>("PHONE");
+  const [initialDateTime] = useState(() => nowLocalIso());
 
   useEffect(() => {
     if (state.ok) {
@@ -155,7 +156,7 @@ export function CommunicationLogForm({
             id="comm-when"
             name="occurredAt"
             type="datetime-local"
-            defaultValue={nowLocalIso()}
+            defaultValue={initialDateTime}
             required
           />
         </div>
