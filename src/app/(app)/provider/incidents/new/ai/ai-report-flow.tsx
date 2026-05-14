@@ -284,6 +284,9 @@ function ReviewStep({
     data.incidentType ?? ""
   );
   const [severity, setSeverity] = useState<string>(data.severity ?? "");
+  // Capture "now" once so Base UI's FieldControl doesn't see a changing
+  // default value between renders.
+  const [occurredAt] = useState(() => data.occurredAt ?? nowLocalIso());
 
   return (
     <form action={submitDispatch} className="space-y-4">
@@ -351,7 +354,7 @@ function ReviewStep({
               id="occurredAt"
               name="occurredAt"
               type="datetime-local"
-              defaultValue={data.occurredAt ?? nowLocalIso()}
+              defaultValue={occurredAt}
               required
             />
           </div>
