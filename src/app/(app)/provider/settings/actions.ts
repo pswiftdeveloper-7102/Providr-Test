@@ -134,7 +134,7 @@ export async function inviteWorkerFromSettingsAction(
 
   const baseUrl =
     process.env.AUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3030";
-  const inviteUrl = `${baseUrl}/worker-invite/${token}`;
+  const inviteUrl = `${baseUrl}/app/worker-invite/${token}`;
 
   revalidatePath("/provider/settings");
   return {

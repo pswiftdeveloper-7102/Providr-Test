@@ -71,5 +71,5 @@ export async function inviteWorkerAction(
 
   const baseUrl =
     process.env.AUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3030";
-  return { ok: true, inviteUrl: `${baseUrl}/worker-invite/${token}` };
+  return { ok: true, inviteUrl: `${baseUrl}/app/worker-invite/${token}` };
 }
