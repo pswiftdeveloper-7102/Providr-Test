@@ -111,6 +111,12 @@ const PROVIDER_INCIDENT_NAV: NavItem[] = [
     icon: ShieldCheck,
     managerOnly: true,
   },
+  {
+    href: "/provider/settings",
+    label: "Settings",
+    icon: Settings,
+    managerOnly: true,
+  },
 ];
 
 const PROVIDER_ROSTERING_NAV: NavItem[] = [
