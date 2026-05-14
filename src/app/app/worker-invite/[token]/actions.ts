@@ -1,9 +1,12 @@
 "use server";
 
 import { createHash } from "crypto";
+import { redirect } from "next/navigation";
+import { AuthError } from "next-auth";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 
+import { signIn } from "@/auth";
 import { db } from "@/lib/db";
 
 const schema = z
@@ -114,7 +117,26 @@ export async function acceptWorkerInviteAction(
     });
   });
 
-  return { ok: true, workerEmail: email };
+  // Sign the worker in immediately so they land on /app as themselves.
+  // This also overrides any pre-existing session (e.g. a manager who
+  // opened the invite link in their own browser to test it) — without
+  // this swap they'd see the manager's profile, not the new worker's.
+  try {
+    await signIn("credentials", {
+      email,
+      password: parsed.data.password,
+      redirect: false,
+    });
+  } catch (err) {
+    if (err instanceof AuthError) {
+      // Account is set up; just couldn't swap the session automatically.
+      // Surface the success alert so the worker can sign in manually.
+      return { ok: true, workerEmail: email };
+    }
+    throw err;
+  }
+
+  redirect("/app");
 }
 
 export async function checkInviteAction(
