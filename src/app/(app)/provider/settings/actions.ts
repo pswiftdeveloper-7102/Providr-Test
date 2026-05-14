@@ -15,6 +15,7 @@ const inviteSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required."),
   lastName: z.string().trim().min(1, "Last name is required."),
   email: z.string().trim().email("Enter a valid email."),
+  participantId: z.string().optional().or(z.literal("")),
 });
 
 export type InviteWorkerState = {
@@ -40,6 +41,7 @@ export async function inviteWorkerFromSettingsAction(
     firstName: formData.get("firstName") ?? "",
     lastName: formData.get("lastName") ?? "",
     email: formData.get("email") ?? "",
+    participantId: formData.get("participantId") ?? "",
   });
   if (!parsed.success) {
     const fieldErrors: Record<string, string> = {};
@@ -51,6 +53,21 @@ export async function inviteWorkerFromSettingsAction(
   }
 
   const email = parsed.data.email.toLowerCase();
+  const participantId = parsed.data.participantId || null;
+
+  // If a participant was selected, verify it belongs to the active
+  // org. Server-trust: never just take the ID from the form.
+  if (participantId) {
+    const p = await db.participant.findFirst({
+      where: { id: participantId, orgId: context.activeOrg.id },
+      select: { id: true },
+    });
+    if (!p) {
+      return {
+        fieldErrors: { participantId: "Participant not found." },
+      };
+    }
+  }
 
   let worker = await db.worker.findFirst({
     where: { orgId: context.activeOrg.id, email },
@@ -95,6 +112,24 @@ export async function inviteWorkerFromSettingsAction(
         createdBy: session?.user?.id ?? null,
       },
     });
+    if (participantId) {
+      // Idempotent — composite unique on (workerId, participantId).
+      // upsert keeps the access grant intact when re-inviting.
+      await tx.workerParticipant.upsert({
+        where: {
+          workerId_participantId: {
+            workerId: worker!.id,
+            participantId,
+          },
+        },
+        update: {},
+        create: {
+          workerId: worker!.id,
+          participantId,
+          createdById: session?.user?.id ?? null,
+        },
+      });
+    }
   });
 
   const baseUrl =

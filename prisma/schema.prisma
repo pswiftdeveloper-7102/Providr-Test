@@ -236,6 +236,7 @@ model Participant {
   informalSupports      InformalSupport[]
   externalContacts      ExternalContact[]
   communicationLogs     CommunicationLog[]
+  workerAccess          WorkerParticipant[]
 }
 
 // NDIS plans live under a participant. A plan has a date range and a total
@@ -461,6 +462,26 @@ model Worker {
   shifts          Shift[]
   trainingRecords TrainingRecord[]
   invites         WorkerInvite[]
+  participantAccess WorkerParticipant[]
+}
+
+// 2026-05-14: explicit Worker ↔ Participant access grants. Admins
+// pick participants when inviting a worker so the worker knows which
+// participants they support. v1 just stores the grant — query-level
+// filtering (workers only see shifts/incidents for assigned
+// participants) is a follow-up.
+model WorkerParticipant {
+  id            String      @id @default(cuid())
+  workerId      String
+  worker        Worker      @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  createdById   String?
+
+  @@unique([workerId, participantId])
+  @@index([workerId])
+  @@index([participantId])
 }
 
 enum ShiftStatus {

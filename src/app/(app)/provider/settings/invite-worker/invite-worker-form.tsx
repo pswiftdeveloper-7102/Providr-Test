@@ -15,6 +15,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FormError } from "@/components/form-error";
 
 import {
@@ -24,12 +31,23 @@ import {
 
 const initial: InviteWorkerState = {};
 
-export function InviteWorkerForm() {
+type Participant = {
+  id: string;
+  name: string;
+  ndisNumber: string | null;
+};
+
+export function InviteWorkerForm({
+  participants,
+}: {
+  participants: Participant[];
+}) {
   const [state, dispatch, pending] = useActionState(
     inviteWorkerFromSettingsAction,
     initial
   );
   const [copied, setCopied] = useState(false);
+  const [participantId, setParticipantId] = useState("");
 
   const onCopy = async () => {
     if (!state.inviteUrl) return;
@@ -108,6 +126,54 @@ export function InviteWorkerForm() {
                 {state.fieldErrors.email}
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="participantId">Participant (optional)</Label>
+            <Select
+              name="participantId"
+              value={participantId}
+              onValueChange={(v) => setParticipantId(v ?? "")}
+            >
+              <SelectTrigger
+                id="participantId"
+                className="w-full"
+                aria-invalid={!!state.fieldErrors?.participantId}
+              >
+                <SelectValue placeholder="Select a participant to grant access">
+                  {participants.find((p) => p.id === participantId)?.name}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {participants.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    No participants yet.
+                  </div>
+                ) : (
+                  participants.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      <div className="flex items-baseline gap-2">
+                        <span>{p.name}</span>
+                        {p.ndisNumber && (
+                          <span className="text-xs text-muted-foreground">
+                            #{p.ndisNumber}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+            {state.fieldErrors?.participantId && (
+              <p className="text-xs text-destructive">
+                {state.fieldErrors.participantId}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              The worker will be granted access to this participant.
+              You can add more later.
+            </p>
           </div>
 
           <FormError message={state.error} />

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { requireManager } from "@/lib/rbac";
 
@@ -11,6 +12,12 @@ export default async function InviteWorkerPage() {
   const context = await resolvePortalContext("provider");
   requireManager(context);
   const orgName = context.activeOrg.tradingName ?? context.activeOrg.legalName;
+
+  const participants = await db.participant.findMany({
+    where: { orgId: context.activeOrg.id },
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    select: { id: true, firstName: true, lastName: true, ndisNumber: true },
+  });
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -38,7 +45,13 @@ export default async function InviteWorkerPage() {
         </div>
       </header>
 
-      <InviteWorkerForm />
+      <InviteWorkerForm
+        participants={participants.map((p) => ({
+          id: p.id,
+          name: `${p.firstName} ${p.lastName}`,
+          ndisNumber: p.ndisNumber,
+        }))}
+      />
     </div>
   );
 }

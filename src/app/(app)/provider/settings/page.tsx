@@ -38,6 +38,14 @@ export default async function ProviderSettingsPage() {
         take: 1,
         select: { id: true, expiresAt: true, createdAt: true },
       },
+      participantAccess: {
+        select: {
+          participant: {
+            select: { id: true, firstName: true, lastName: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      },
     },
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
   });
@@ -111,6 +119,22 @@ export default async function ProviderSettingsPage() {
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
                   Joined {format(w.createdAt, "dd/MM/yyyy")}
                 </p>
+                {w.participantAccess.length > 0 && (
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Access:
+                    </span>
+                    {w.participantAccess.map((wp) => (
+                      <Badge
+                        key={wp.participant.id}
+                        variant="secondary"
+                        className="text-[10px]"
+                      >
+                        {wp.participant.firstName} {wp.participant.lastName}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
               <Button
                 variant="ghost"
@@ -158,6 +182,22 @@ export default async function ProviderSettingsPage() {
                     Invited {format(invite.createdAt, "dd/MM/yyyy")} · expires{" "}
                     {format(invite.expiresAt, "dd/MM/yyyy")}
                   </p>
+                  {w.participantAccess.length > 0 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                        Access:
+                      </span>
+                      {w.participantAccess.map((wp) => (
+                        <Badge
+                          key={wp.participant.id}
+                          variant="secondary"
+                          className="text-[10px]"
+                        >
+                          {wp.participant.firstName} {wp.participant.lastName}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <RevokeInviteButton workerId={w.id} />
               </div>
