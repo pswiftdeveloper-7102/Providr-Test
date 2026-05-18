@@ -285,7 +285,7 @@ function ModuleSidebar<K extends string>({
     : allItems.filter((item) => !item.managerOnly);
 
   return (
-    <aside className="hidden w-60 shrink-0 border-r bg-sidebar lg:block">
+    <aside className="hidden w-60 shrink-0 overflow-y-auto border-r bg-sidebar lg:block">
       <div className="px-3 py-4">
         <ToggleGroup
           aria-label="Switch module"
@@ -375,7 +375,7 @@ function FlatSidebar({
   items: NavItem[];
 }) {
   return (
-    <aside className="hidden w-56 shrink-0 border-r bg-sidebar lg:block">
+    <aside className="hidden w-56 shrink-0 overflow-y-auto border-r bg-sidebar lg:block">
       <nav className="px-3 py-6">
         <p className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {portal === "provider" ? "Provider" : "Coordinator"}

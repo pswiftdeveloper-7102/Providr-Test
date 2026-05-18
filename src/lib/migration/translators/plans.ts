@@ -6,11 +6,18 @@
 // budgets to belong to a specific Plan. We attach each participant's
 // budgets to that participant's most recent Plan (by start_date desc).
 //
-// NDIA support category → BudgetCategory mapping (per client answer #7,
-// verified against the NDIA Pricing Arrangements as a separate task):
-//   CORE:     01, 02, 03, 04
-//   CAPITAL:  05, 06
-//   CAPACITY: 07, 08, 09, 10, 11, 12, 13, 14, 15
+// NDIA support category → BudgetCategory mapping. Verified against the
+// 2025-26 NDIS Pricing Arrangements and Price Limits (V1.0, p.13).
+//   CORE:     01, 02, 03, 04          (legacy CRM)
+//             16, 21                  (PACE additions: Home & Living, YPIRAC)
+//   CAPITAL:  05, 06                  (legacy CRM)
+//             17, 19                  (PACE: SDA, AT Maint. Repair & Rental)
+//   CAPACITY: 07, 08, 09, 10, 11,
+//             12, 13, 14, 15          (legacy CRM)
+//             20                      (PACE: Behaviour Support)
+//   18 (Recurring Transport) is its own RECURRING purpose per the NDIA
+//   doc, not CORE/CAPACITY/CAPITAL. Not yet represented in our
+//   BudgetCategory enum; rows with category 18 are skipped + warned.
 //
 // Decimal → cents: source is Decimal(12,2) AUD; new schema stores Int
 // cents. Conversion is value * 100, rounded to nearest int.
@@ -28,10 +35,19 @@ type BudgetCategory = "CORE" | "CAPACITY" | "CAPITAL";
 
 function categoryFor(supportCategoryNumber: string): BudgetCategory | null {
   const n = supportCategoryNumber.padStart(2, "0");
+  // Legacy CRM categories 01-15
   if (["01", "02", "03", "04"].includes(n)) return "CORE";
   if (["05", "06"].includes(n)) return "CAPITAL";
   if (["07", "08", "09", "10", "11", "12", "13", "14", "15"].includes(n))
     return "CAPACITY";
+  // PACE additions
+  if (n === "16") return "CORE";    // Home and Living
+  if (n === "17") return "CAPITAL"; // Specialised Disability Accommodation
+  // 18 = Recurring Transport (separate RECURRING purpose — not yet
+  // representable in BudgetCategory; returns null → warned + skipped).
+  if (n === "19") return "CAPITAL"; // AT Maintenance Repair and Rental
+  if (n === "20") return "CAPACITY"; // Behaviour Support
+  if (n === "21") return "CORE"; // Young People in Residential Aged Care
   return null;
 }
 

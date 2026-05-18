@@ -25,9 +25,18 @@ function assertSafeConfig(): void {
       "DATABASE_URL is not set. Point it at the target (new) DB."
     );
   }
-  if (process.env.LEGACY_DATABASE_URL === process.env.DATABASE_URL) {
+  // Same-URL safety check — refuses unless the operator has explicitly
+  // opted in. The single-DB strategy (live Supabase has both legacy
+  // Laravel tables AND the new Prisma tables) is a legitimate use case
+  // for matching URLs, but it's easy to do by accident in dev.
+  if (
+    process.env.LEGACY_DATABASE_URL === process.env.DATABASE_URL &&
+    process.env.MIGRATE_ALLOW_SAME_DB !== "yes-i-know"
+  ) {
     throw new Error(
-      "LEGACY_DATABASE_URL and DATABASE_URL point at the same database. Refusing to run."
+      "LEGACY_DATABASE_URL and DATABASE_URL point at the same database. " +
+        "Refusing to run. Set MIGRATE_ALLOW_SAME_DB=yes-i-know to bypass " +
+        "(intentional only for the in-place single-DB migration strategy)."
     );
   }
 }
