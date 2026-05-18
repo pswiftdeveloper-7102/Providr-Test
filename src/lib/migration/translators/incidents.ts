@@ -89,9 +89,12 @@ export async function migrateIncidents(
         log.record("skipped");
         continue;
       }
-      if (row.is_demo || row.deleted_at) {
-        // Mark in id-map so dependent translators (BSP reports) know to
-        // silently skip child rows rather than fail.
+      // NOTE (2026-05-18): we no longer skip on is_demo (same reason as
+      // participants — the field doesn't reliably mark fake data). We
+      // still skip soft-deleted rows because the org explicitly deleted
+      // them. Cascade-skip is marked so BSPAnalysisReports for these
+      // skipped incidents are also silently dropped.
+      if (row.deleted_at) {
         map.markSkipped(row.id);
         log.record("skipped");
         continue;

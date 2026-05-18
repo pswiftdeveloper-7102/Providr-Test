@@ -74,14 +74,11 @@ export async function migrateParticipants(
         continue;
       }
 
-      if (row.is_demo) {
-        // Mark in id-map so dependent translators (plans, goals, notes,
-        // alerts, risks, contacts) know to silently skip child rows
-        // rather than fail with "participant not in id-map".
-        map.markSkipped(row.id);
-        log.record("skipped");
-        continue;
-      }
+      // NOTE (2026-05-18): previously we skipped rows with is_demo=true.
+      // Confirmed with the user the field doesn't reliably mean "demo
+      // data" — many legitimate participants happen to be flagged. We
+      // now migrate them all; the new app will show every participant
+      // the OLD app showed.
 
       const orgId = providerOrgsMap.get(row.provider_company_id);
       if (!orgId) {
