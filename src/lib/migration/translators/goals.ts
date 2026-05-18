@@ -103,7 +103,7 @@ export async function migrateParticipantGoals(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 
@@ -158,6 +158,6 @@ export async function migrateParticipantPlanGoals(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }

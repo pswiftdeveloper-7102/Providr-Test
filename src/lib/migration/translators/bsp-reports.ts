@@ -111,6 +111,6 @@ export async function migrateBSPAnalysisReports(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }

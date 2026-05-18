@@ -128,6 +128,6 @@ export async function migrateWorkersFromParticipantWorker(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }

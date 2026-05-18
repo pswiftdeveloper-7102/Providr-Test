@@ -98,7 +98,7 @@ export async function migrateParticipantNotes(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 
@@ -153,7 +153,7 @@ export async function migrateParticipantAlerts(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 
@@ -213,6 +213,6 @@ export async function migrateParticipantRisks(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }

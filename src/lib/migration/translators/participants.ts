@@ -131,6 +131,6 @@ export async function migrateParticipants(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }

@@ -102,7 +102,7 @@ export async function migratePlans(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 

@@ -109,7 +109,11 @@ export class IdMap {
     return this.entries.size;
   }
 
-  async save(): Promise<void> {
+  // mode="dry-run" skips persistence entirely — dry-run is supposed to
+  // be ephemeral, and persisting sentinels like `<dry-run:1>` causes
+  // subsequent commit runs to think rows are already migrated.
+  async save(mode: "dry-run" | "commit" = "commit"): Promise<void> {
+    if (mode === "dry-run") return;
     if (!this.dirty) return;
     await mkdir(dirname(this.path), { recursive: true });
     const obj: DiskShape = {

@@ -84,7 +84,7 @@ export async function migrateSCProviderAccess(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 

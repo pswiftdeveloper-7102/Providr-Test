@@ -80,7 +80,7 @@ export async function migrateParticipantDocuments(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 
@@ -140,7 +140,7 @@ export async function migrateParticipantRecords(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 
@@ -224,6 +224,6 @@ export async function migrateCustomerDocuments(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }

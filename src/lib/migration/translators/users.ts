@@ -175,7 +175,7 @@ export async function migrateUsers(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 
@@ -239,6 +239,6 @@ export async function migrateSCUsers(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }

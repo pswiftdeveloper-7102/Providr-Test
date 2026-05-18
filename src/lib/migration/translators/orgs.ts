@@ -98,7 +98,7 @@ export async function migrateProviderCompanies(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
 
@@ -176,6 +176,6 @@ export async function migrateSCOrganisations(
     }
   }
 
-  await map.save();
+  await map.save(mode);
   return map;
 }
