@@ -34,7 +34,7 @@ export async function updateGoalEvidenceAction(
       carePlan: { select: { participantId: true } },
     },
   });
-  if (!goal) return { error: "Goal not found." };
+  if (!goal || !goal.carePlan) return { error: "Goal not found." };
 
   const parsed = schema.safeParse({
     evidenceSummary: formData.get("evidenceSummary"),

@@ -59,6 +59,9 @@ model Org {
   escalations           Escalation[]
   spendEntries          SpendEntry[]
   communicationLogs     CommunicationLog[]
+  bspAnalysisReports    BSPAnalysisReport[]
+  scConnectionsAsProvider SCConnection[] @relation("ProviderSCConnections")
+  scConnectionsAsSC       SCConnection[] @relation("SCSCConnections")
 }
 
 model OrgEntitlement {
@@ -237,6 +240,11 @@ model Participant {
   externalContacts      ExternalContact[]
   communicationLogs     CommunicationLog[]
   workerAccess          WorkerParticipant[]
+  notes                 ParticipantNote[]
+  alerts                ParticipantAlert[]
+  risks                 ParticipantRisk[]
+  goals                 Goal[]
+  scAccess              SCParticipantAccess[]
 }
 
 // NDIS plans live under a participant. A plan has a date range and a total
@@ -412,15 +420,21 @@ enum GoalStatus {
   DROPPED
 }
 
+// Goals can hang off either a CarePlan (preferred — gives clinical context)
+// or directly off a Participant (used during legacy migration when goals
+// exist before any CarePlan does). App layer enforces "at least one of
+// carePlanId/participantId is set."
 model Goal {
-  id          String       @id @default(cuid())
-  carePlanId  String
-  carePlan    CarePlan     @relation(fields: [carePlanId], references: [id], onDelete: Cascade)
-  title       String
-  description String?      @db.Text
-  category    GoalCategory @default(OTHER)
-  status      GoalStatus   @default(IN_PROGRESS)
-  targetDate  DateTime?
+  id            String       @id @default(cuid())
+  carePlanId    String?
+  carePlan      CarePlan?    @relation(fields: [carePlanId], references: [id], onDelete: Cascade)
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?      @db.Text
+  category      GoalCategory @default(OTHER)
+  status        GoalStatus   @default(IN_PROGRESS)
+  targetDate    DateTime?
   // Narrative of what worked, written for the evidence pack — SC Job 6
   // ("show what worked, show what's needed").
   evidenceSummary String?  @db.Text
@@ -429,6 +443,7 @@ model Goal {
   updatedAt DateTime @updatedAt
 
   @@index([carePlanId, status])
+  @@index([participantId, status])
 }
 
 // Provider Scene 4 distinguishes three teams: daily helpers (support
@@ -979,6 +994,308 @@ model Incident {
   declarationName     String?
   declarationSignedAt DateTime?
 
+  bspAnalysisReport BSPAnalysisReport?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── Migration additions (2026-05-15) ──────────────────────────────────
+// Models added to receive data from the legacy Laravel-shaped database.
+// See client decisions on PR #N for the source-table mapping rationale.
+
+// ─── Documents ─────────────────────────────────────────────────────────
+// Polymorphic file metadata. Files live in S3; this table holds the
+// metadata + version chain. NDIS providers must keep prior versions
+// (compliance), so updates create new rows pointing back via
+// `parentDocumentId` rather than overwriting in place.
+//
+// Polymorphic association: `entityType` + `entityId` references one of
+// Participant/Worker/Org/Incident/CarePlan/BSP/ServiceAgreement/User.
+// No FK constraints — Prisma doesn't natively support polymorphic FKs;
+// referential integrity is enforced at the application layer.
+
+enum DocumentType {
+  SERVICE_AGREEMENT
+  BSP
+  CARE_PLAN
+  INCIDENT_REPORT
+  EVIDENCE_PACK
+  PARTICIPANT_DOCUMENT
+  PARTICIPANT_RECORD
+  WORKER_CERTIFICATE
+  CUSTOMER_DOCUMENT
+  OTHER
+}
+
+enum DocumentEntityType {
+  PARTICIPANT
+  WORKER
+  ORG
+  INCIDENT
+  CARE_PLAN
+  BSP
+  SERVICE_AGREEMENT
+  USER
+}
+
+enum DocumentStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  ARCHIVED
+}
+
+model Document {
+  id               String         @id @default(cuid())
+  s3Key            String         // S3 object key — actual file lives here
+  originalFilename String?
+  contentType      String?
+  fileSizeBytes    Int?
+
+  documentType     DocumentType
+
+  entityType       DocumentEntityType
+  entityId         String
+
+  // Version chain. v1 of a document has parentDocumentId = null. Each
+  // subsequent version creates a new row whose parentDocumentId points
+  // at the immediate predecessor. The "latest" version of a chain is the
+  // row that no other row points back to.
+  version          Int        @default(1)
+  parentDocumentId String?
+  parentDocument   Document?  @relation("DocumentVersions", fields: [parentDocumentId], references: [id], onDelete: Restrict)
+  childVersions    Document[] @relation("DocumentVersions")
+
+  status           DocumentStatus @default(DRAFT)
+
+  expiresAt        DateTime?      // service agreements, certificates
+  signedAt         DateTime?
+  signedById       String?        // User.id
+
+  createdAt        DateTime  @default(now())
+  createdById      String?        // User.id
+
+  @@index([entityType, entityId])
+  @@index([documentType, status])
+  @@index([expiresAt])
+}
+
+// ─── BSP AI analysis ───────────────────────────────────────────────────
+// One report per Incident. Mirrors the live `bsp_analysis_reports`
+// columns 1:1 so historical data can be migrated faithfully. Anything
+// in the source row that doesn't fit a column gets stashed into
+// `legacyAnalysisData` (JSON). `migrationSource` distinguishes records
+// generated by the new system vs. brought over from the legacy system,
+// so analytics queries can filter when fairness matters.
+
+enum BSPAnalysisSource {
+  NATIVE
+  MIGRATED_LARAVEL
+}
+
+model BSPAnalysisReport {
+  id         String   @id @default(cuid())
+  incidentId String   @unique
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  orgId      String
+  org        Org      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Migration tracking
+  migrationSource    BSPAnalysisSource @default(NATIVE)
+  legacyAnalysisData Json?
+
+  // BSP gap detection
+  bspGapsDetected         Json?
+  bspGapsDetectedDetails  String?  @db.Text
+
+  // Draft BSP updates (per-section)
+  draftBspContextOfBehaviour          String?  @db.Text
+  draftBspEnvironmentalConsiderations String?  @db.Text
+  draftBspTraumaInformedAdjustments   String?  @db.Text
+  draftBspSafetyRecommendations       String?  @db.Text
+
+  // Trigger alignment
+  triggerMatchedTriggers Json?
+  triggerConfidenceLevel String?
+  triggerExplanation     String?  @db.Text
+
+  // Strategy assessment
+  strategyMissingProactive Json?
+  strategyMissedReactive   Json?
+  strategyStaffResponse    String?  @db.Text
+
+  // Identified gaps summary
+  identifiedGapsSummary Json?
+
+  // BSP internal inconsistencies
+  bspInternalInconsistencies        Json?
+  bspInternalInconsistenciesDetails String?  @db.Text
+
+  // Outdated strategies
+  potentiallyOutdatedStrategies        Json?
+  potentiallyOutdatedStrategiesDetails String?  @db.Text
+
+  // Skill building opportunities
+  skillBuildingOpportunities        Json?
+  skillBuildingOpportunitiesDetails String?  @db.Text
+
+  // Risk insights
+  riskRecurrenceRisk       String?
+  riskEnvironmentalFactors Json?
+  riskBehaviouralFactors   Json?
+  riskMitigationSummary    String?  @db.Text
+
+  // NDIS compliance assessment
+  ndisComplianceLevel          String?
+  ndisPersonCentredPractice    Json?
+  ndisPositiveBehaviourSupport Json?
+  ndisRestrictivePractice      Json?
+  ndisEnvironmentSafety        Json?
+  ndisIncidentDocumentation    Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, createdAt])
+  @@index([migrationSource])
+}
+
+// ─── SC ↔ Provider cross-org access ────────────────────────────────────
+// Mirrors the live "Provider Connections" feature (sc_provider_access
+// + sc_participant_access). Provider invites SC org → SC accepts →
+// provider grants per-participant access. SC sees only the participants
+// they've been granted access to.
+
+enum SCConnectionStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum SCParticipantAccessType {
+  READ
+  READ_WRITE
+}
+
+model SCConnection {
+  id                  String             @id @default(cuid())
+  providerOrgId       String
+  providerOrg         Org                @relation("ProviderSCConnections", fields: [providerOrgId], references: [id], onDelete: Cascade)
+  scOrgId             String?            // null while invitation pending
+  scOrg               Org?               @relation("SCSCConnections", fields: [scOrgId], references: [id], onDelete: Cascade)
+  invitedByUserId     String?
+  invitationEmail     String?
+  invitationToken     String?            @unique
+  invitationExpiresAt DateTime?
+  invitationNote      String?            @db.Text
+  status              SCConnectionStatus @default(PENDING)
+  createdAt           DateTime           @default(now())
+  acceptedAt          DateTime?
+  revokedAt           DateTime?
+
+  participantAccess SCParticipantAccess[]
+
+  @@index([providerOrgId, status])
+  @@index([scOrgId, status])
+}
+
+model SCParticipantAccess {
+  id             String                  @id @default(cuid())
+  scConnectionId String
+  scConnection   SCConnection            @relation(fields: [scConnectionId], references: [id], onDelete: Cascade)
+  participantId  String
+  participant    Participant             @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  accessType     SCParticipantAccessType @default(READ)
+  grantedAt      DateTime                @default(now())
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+
+  @@unique([scConnectionId, participantId])
+  @@index([participantId])
+}
+
+// ─── Participant clinical detail ───────────────────────────────────────
+// Three small models lifted from the legacy `participant_notes`,
+// `participant_alerts`, `participant_risks` tables. All hang directly
+// off a Participant — they're not bound to any specific CarePlan or
+// shift, which keeps them visible across CarePlan revisions.
+
+model ParticipantNote {
+  id            String      @id @default(cuid())
+  participantId String
+  participant   Participant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  authorId      String?     // User.id
+  body          String      @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([participantId, createdAt])
+}
+
+enum ParticipantAlertSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model ParticipantAlert {
+  id            String                   @id @default(cuid())
+  participantId String
+  participant   Participant              @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?                  @db.Text
+  severity      ParticipantAlertSeverity @default(INFO)
+  isActive      Boolean                  @default(true)
+  createdById   String?                  // User.id
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  @@index([participantId, isActive])
+}
+
+enum RiskLikelihood {
+  RARE
+  UNLIKELY
+  POSSIBLE
+  LIKELY
+  ALMOST_CERTAIN
+}
+
+enum RiskConsequence {
+  INSIGNIFICANT
+  MINOR
+  MODERATE
+  MAJOR
+  CATASTROPHIC
+}
+
+enum RiskStatus {
+  ACTIVE
+  MITIGATED
+  ARCHIVED
+}
+
+model ParticipantRisk {
+  id                 String          @id @default(cuid())
+  participantId      String
+  participant        Participant     @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  title              String
+  category           String?
+  description        String?         @db.Text
+  likelihood         RiskLikelihood
+  consequence        RiskConsequence
+  // Computed (likelihood × consequence) in app layer; stored for indexing
+  // and reporting. Free-text so providers can use their own labels.
+  riskLevel          String?
+  mitigationStrategy String?         @db.Text
+  reviewDate         DateTime?
+  status             RiskStatus      @default(ACTIVE)
+  createdById        String?         // User.id
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@index([participantId, status])
 }

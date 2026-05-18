@@ -223,7 +223,7 @@ export async function updateGoalStatusAction(
     },
     include: { carePlan: { select: { participantId: true } } },
   });
-  if (!goal) return { error: "Goal not found." };
+  if (!goal || !goal.carePlan) return { error: "Goal not found." };
 
   await db.goal.update({
     where: { id: goalId },

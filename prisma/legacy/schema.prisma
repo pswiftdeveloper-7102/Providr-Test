@@ -1,0 +1,1335 @@
+// READ-ONLY SOURCE schema for the legacy Laravel-shaped database.
+// This file exists solely so the migration script (scripts/migrate-from-laravel.ts)
+// has a typed Prisma client to read from. NEVER use this client to write —
+// the legacy DB is the production system, and the new app should never touch
+// it. The migration script writes to the *target* DB via the main Prisma client.
+//
+// Generated client lives at node_modules/@prisma/client-legacy (out of band
+// from the main client at node_modules/@prisma/client) so the two never clash.
+// LEGACY_DATABASE_URL points at a copy of the live DB restored to a staging
+// Postgres — NEVER point it at the actual live DB.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../node_modules/@prisma/client-legacy"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("LEGACY_DATABASE_URL")
+}
+
+model admin_dashboard_preferences {
+  id           BigInt    @id @default(autoincrement())
+  admin_id     BigInt    @unique(map: "admin_dashboard_preferences_admin_id_unique")
+  layout       Json?     @db.Json
+  hidden_tiles Json?     @db.Json
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+  admins       admins    @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "admin_dashboard_preferences_admin_id_foreign")
+}
+
+model admins {
+  id                          BigInt                       @id @default(autoincrement())
+  name                        String                       @db.VarChar(255)
+  email                       String                       @unique(map: "admins_email_unique") @db.VarChar(255)
+  password                    String                       @db.VarChar(255)
+  created_at                  DateTime?                    @db.Timestamp(0)
+  updated_at                  DateTime?                    @db.Timestamp(0)
+  admin_dashboard_preferences admin_dashboard_preferences?
+  provider_company_imports    provider_company_imports[]
+}
+
+model ai_models {
+  id                        BigInt                   @id @default(autoincrement())
+  model_name                String                   @db.VarChar(255)
+  api_key                   String                   @db.VarChar(255)
+  is_active                 Boolean                  @default(false)
+  created_at                DateTime?                @db.Timestamp(0)
+  updated_at                DateTime?                @db.Timestamp(0)
+  provider                  String?                  @default("groq") @db.VarChar(50)
+  display_name              String?                  @db.VarChar(100)
+  tier                      String?                  @db.VarChar(50)
+  purpose                   String?                  @default("all") @db.VarChar(50)
+  description               String?
+  is_default                Boolean?                 @default(false)
+  cost_per_1k_input_tokens  Decimal?                 @default(0) @db.Decimal(10, 8)
+  cost_per_1k_output_tokens Decimal?                 @default(0) @db.Decimal(10, 8)
+  ai_usage_logs             ai_usage_logs[]
+  subscription_ai_limits    subscription_ai_limits[]
+}
+
+model bsp_analysis_reports {
+  id                                            BigInt             @id @default(autoincrement())
+  incident_id                                   BigInt             @unique(map: "bsp_analysis_reports_incident_id_unique")
+  provider_company_id                           BigInt
+  bsp_gaps_detected                             Json?              @db.Json
+  bsp_gaps_detected_details                     String?
+  draft_bsp_update_context_of_behaviour         String?
+  draft_bsp_update_environmental_considerations String?
+  draft_bsp_update_trauma_informed_adjustments  String?
+  draft_bsp_update_safety_recommendations       String?
+  trigger_alignment_matched_triggers            Json?              @db.Json
+  trigger_alignment_confidence_level            String?            @db.VarChar(255)
+  trigger_alignment_explanation                 String?
+  strategy_assessment_missing_proactive         Json?              @db.Json
+  strategy_assessment_missed_reactive           Json?              @db.Json
+  strategy_assessment_staff_response            String?
+  identified_gaps_summary                       Json?              @db.Json
+  bsp_internal_inconsistencies                  Json?              @db.Json
+  bsp_internal_inconsistencies_details          String?
+  potentially_outdated_strategies               Json?              @db.Json
+  potentially_outdated_strategies_details       String?
+  skill_building_opportunities                  Json?              @db.Json
+  skill_building_opportunities_details          String?
+  risk_insights_recurrence_risk                 String?            @db.VarChar(255)
+  risk_insights_environmental_risk_factors      Json?              @db.Json
+  risk_insights_behavioural_risk_factors        Json?              @db.Json
+  risk_insights_risk_mitigation_summary         String?
+  ndis_compliance_assessment_compliance_level   String?            @db.VarChar(255)
+  ndis_compliance_person_centred_practice       Json?              @db.Json
+  ndis_compliance_positive_behaviour_support    Json?              @db.Json
+  ndis_compliance_restrictive_practice          Json?              @db.Json
+  ndis_compliance_environment_safety            Json?              @db.Json
+  ndis_compliance_incident_documentation        Json?              @db.Json
+  created_at                                    DateTime?          @db.Timestamp(0)
+  updated_at                                    DateTime?          @db.Timestamp(0)
+  incidents                                     incidents          @relation(fields: [incident_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "bsp_analysis_reports_incident_id_foreign")
+  provider_companies                            provider_companies @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "bsp_analysis_reports_provider_company_id_foreign")
+
+  @@index([provider_company_id], map: "bsp_analysis_reports_provider_company_id_index")
+}
+
+model bsp_prompt_definitions {
+  id                                            BigInt    @id @default(autoincrement())
+  bsp_gaps_detected                             String?
+  bsp_gaps_detected_details                     String?
+  draft_bsp_update                              String?
+  draft_bsp_update_context_of_behaviour         String?
+  draft_bsp_update_environmental_considerations String?
+  draft_bsp_update_trauma_informed_adjustments  String?
+  draft_bsp_update_safety_recommendations       String?
+  trigger_alignment                             String?
+  trigger_alignment_matched_triggers            String?
+  trigger_alignment_confidence_level            String?
+  trigger_alignment_explanation                 String?
+  strategy_assessment                           String?
+  strategy_assessment_missing_proactive         String?
+  strategy_assessment_missed_reactive           String?
+  strategy_assessment_staff_response            String?
+  identified_gaps_summary                       String?
+  bsp_internal_inconsistencies                  String?
+  bsp_internal_inconsistencies_details          String?
+  potentially_outdated_strategies               String?
+  potentially_outdated_strategies_details       String?
+  skill_building_opportunities                  String?
+  skill_building_opportunities_details          String?
+  risk_insights                                 String?
+  risk_insights_recurrence_risk                 String?
+  risk_insights_environmental_risk_factors      String?
+  risk_insights_behavioural_risk_factors        String?
+  risk_insights_risk_mitigation_summary         String?
+  ndis_compliance_assessment                    String?
+  ndis_compliance_assessment_compliance_level   String?
+  ndis_compliance_person_centred_practice       String?
+  ndis_compliance_positive_behaviour_support    String?
+  ndis_compliance_restrictive_practice          String?
+  ndis_compliance_environment_safety            String?
+  ndis_compliance_incident_documentation        String?
+  is_active                                     Boolean   @default(false)
+  created_at                                    DateTime? @db.Timestamp(0)
+  updated_at                                    DateTime? @db.Timestamp(0)
+}
+
+model bsp_prompt_sections {
+  id                  BigInt    @id @default(autoincrement())
+  section_number      Int       @unique(map: "bsp_prompt_sections_section_number_unique")
+  section_name        String    @db.VarChar(255)
+  section_description String?
+  main_prompt         String?
+  field_prompts       Json?     @db.Json
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model claim_requests {
+  id                  BigInt             @id @default(autoincrement())
+  provider_company_id BigInt
+  email               String             @db.VarChar(255)
+  status              String             @default("rejected") @db.VarChar(255)
+  rejection_reason    String?            @db.VarChar(255)
+  company_website     String?            @db.VarChar(255)
+  company_name        String?            @db.VarChar(255)
+  created_at          DateTime?          @db.Timestamp(0)
+  updated_at          DateTime?          @db.Timestamp(0)
+  provider_companies  provider_companies @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "claim_requests_provider_company_id_foreign")
+
+  @@index([email], map: "claim_requests_email_index")
+  @@index([provider_company_id], map: "claim_requests_provider_company_id_index")
+  @@index([status], map: "claim_requests_status_index")
+}
+
+model customer_documents {
+  id            BigInt    @id @default(autoincrement())
+  customer_id   BigInt
+  document_name String?   @db.VarChar(255)
+  document_path String?   @db.VarChar(255)
+  created_at    DateTime? @db.Timestamp(0)
+  updated_at    DateTime? @db.Timestamp(0)
+}
+
+model customers {
+  id                 BigInt               @id @default(autoincrement())
+  first_name         String               @db.VarChar(255)
+  last_name          String?              @db.VarChar(255)
+  email              String               @unique(map: "customers_email_unique") @db.VarChar(255)
+  password           String               @db.VarChar(255)
+  phone              String?              @db.VarChar(255)
+  dob                DateTime?            @db.Date
+  ndis_number        String?              @db.VarChar(255)
+  ndis_plan_type     String?              @db.VarChar(255)
+  ndis_plan_date     DateTime?            @db.Date
+  active             Boolean              @default(true)
+  google_id          String?              @db.VarChar(255)
+  created_at         DateTime?            @db.Timestamp(0)
+  updated_at         DateTime?            @db.Timestamp(0)
+  participant_worker participant_worker[]
+  participants       participants[]
+}
+
+model failed_jobs {
+  id         BigInt   @id @default(autoincrement())
+  uuid       String   @unique(map: "failed_jobs_uuid_unique") @db.VarChar(255)
+  connection String
+  queue      String
+  payload    String
+  exception  String
+  failed_at  DateTime @default(now()) @db.Timestamp(0)
+}
+
+model favourites {
+  id                  BigInt    @id @default(autoincrement())
+  customer_id         BigInt
+  provider_company_id BigInt
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+}
+
+model incident_types {
+  id         BigInt    @id @default(autoincrement())
+  name       String    @db.VarChar(255)
+  active     Boolean   @default(true)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model incidents {
+  id                                         BigInt                   @id @default(autoincrement())
+  provider_company_id                        BigInt
+  reporting_user_id                          BigInt?
+  customer_id                                BigInt?
+  incident_number                            String                   @unique(map: "incidents_incident_number_unique") @db.VarChar(255)
+  incident_type                              String?                  @db.VarChar(255)
+  severity                                   String?                  @db.VarChar(255)
+  incident_date_time                         DateTime?                @db.Timestamp(0)
+  location                                   String?                  @db.VarChar(255)
+  participant_name                           String?                  @db.VarChar(255)
+  description                                String?
+  generated_report                           String?
+  people_involved                            Json?                    @db.Json
+  injury_occurred                            Boolean                  @default(false)
+  medical_treatment_required                 Boolean                  @default(false)
+  injury_details                             String?
+  is_ndis_reportable                         Boolean                  @default(false)
+  police_notified                            Boolean                  @default(false)
+  notifications_sent                         Json?                    @db.Json
+  key_contributing_factors                   Json?                    @db.Json
+  what_happened                              String?
+  lead_up_triggers                           String?
+  during_incident                            String?
+  response_actions                           String?
+  causes_contributing_factors                String?
+  bsp_alignment_notes                        String?
+  bsp_suggested_improvements                 String?
+  additional_information                     String?
+  follow_up_required                         Boolean                  @default(false)
+  follow_up_actions                          String?
+  status                                     String                   @default("draft") @db.VarChar(255)
+  created_at                                 DateTime?                @db.Timestamp(0)
+  updated_at                                 DateTime?                @db.Timestamp(0)
+  deleted_at                                 DateTime?                @db.Timestamp(0)
+  behavioral_identified                      Boolean                  @default(false)
+  trigger_extracted                          Boolean                  @default(false)
+  bsp_aligned                                Boolean                  @default(false)
+  restrictive_practice_used                  Boolean                  @default(false)
+  participant_id                             BigInt?
+  reporter_signature                         String?
+  reporter_signed_at                         DateTime?                @db.Timestamp(0)
+  witnesses                                  String?
+  notification_made_to                       String?                  @db.VarChar(255)
+  notification_date_time                     DateTime?                @db.Timestamp(0)
+  notification_timeframe                     String?                  @db.VarChar(255)
+  immediate_actions_taken                    String?
+  authority_notified                         Boolean                  @default(false)
+  authority_name                             String?                  @db.VarChar(255)
+  authority_reference                        String?                  @db.VarChar(255)
+  submitted_at                               DateTime?                @db.Timestamp(0)
+  reporting_mode                             String?                  @default("ai") @db.VarChar(20)
+  restrictive_practice_type                  String?                  @db.VarChar(50)
+  restrictive_practice_authorized            Boolean?
+  restrictive_practice_bsp_reference         String?                  @db.VarChar(255)
+  rp_state_territory_auth_reference          String?                  @db.VarChar(255)
+  rp_worker_training_confirmed               Boolean?                 @default(false)
+  reportable_category                        String?                  @db.VarChar(50)
+  notification_deadline                      DateTime?                @db.Timestamptz(6)
+  notification_sent_at                       DateTime?                @db.Timestamptz(6)
+  commission_notification_reference          String?                  @db.VarChar(255)
+  participant_family_notified                Boolean?                 @default(false)
+  participant_family_notified_at             DateTime?                @db.Timestamptz(6)
+  post_incident_review_required              Boolean?                 @default(false)
+  post_incident_review_completed_at          DateTime?                @db.Timestamptz(6)
+  worker_debrief_completed                   Boolean?                 @default(false)
+  worker_debrief_completed_at                DateTime?                @db.Timestamptz(6)
+  participant_response                       String?
+  staff_involved                             Json?                    @default("[]")
+  approved_by_user_id                        BigInt?
+  approved_at                                DateTime?                @db.Timestamptz(6)
+  locked_at                                  DateTime?                @db.Timestamptz(6)
+  locked_by_user_id                          BigInt?
+  triage_result                              Json?
+  triage_run_at                              DateTime?                @db.Timestamptz(6)
+  triage_status                              String?                  @default("skipped") @db.VarChar(20)
+  triage_error                               String?
+  bsp_analysis_reports                       bsp_analysis_reports?
+  incident_notifications                     incident_notifications[]
+  users_incidents_approved_by_user_idTousers users?                   @relation("incidents_approved_by_user_idTousers", fields: [approved_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users_incidents_customer_idTousers         users?                   @relation("incidents_customer_idTousers", fields: [customer_id], references: [id], onUpdate: NoAction, map: "incidents_customer_id_foreign")
+  users_incidents_locked_by_user_idTousers   users?                   @relation("incidents_locked_by_user_idTousers", fields: [locked_by_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  participants                               participants?            @relation(fields: [participant_id], references: [id], onUpdate: NoAction, map: "incidents_participant_id_foreign")
+  provider_companies                         provider_companies       @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "incidents_provider_company_id_foreign")
+  users_incidents_reporting_user_idTousers   users?                   @relation("incidents_reporting_user_idTousers", fields: [reporting_user_id], references: [id], onUpdate: NoAction, map: "incidents_reporting_user_id_foreign")
+  is_demo                                    Boolean                  @default(false)
+}
+
+model jobs {
+  id           BigInt @id @default(autoincrement())
+  queue        String @db.VarChar(255)
+  payload      String
+  attempts     Int    @db.SmallInt
+  reserved_at  Int?
+  available_at Int
+  created_at   Int
+
+  @@index([queue], map: "jobs_queue_index")
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement())
+  migration String @db.VarChar(255)
+  batch     Int
+}
+
+model model_has_permissions {
+  permission_id BigInt
+  model_type    String      @default("App\\\\Models\\\\Admin") @db.VarChar(255)
+  model_id      BigInt
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "model_has_permissions_permission_id_foreign")
+
+  @@id([permission_id, model_id, model_type])
+  @@index([model_id, model_type], map: "model_has_permissions_model_id_model_type_index")
+}
+
+model model_has_roles {
+  role_id    BigInt
+  model_type String @default("App\\\\Models\\\\Admin") @db.VarChar(255)
+  model_id   BigInt
+  roles      roles  @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "model_has_roles_role_id_foreign")
+
+  @@id([role_id, model_id, model_type])
+  @@index([model_id, model_type], map: "model_has_roles_model_id_model_type_index")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model ndis_prompt_definitions {
+  id                  BigInt    @id @default(autoincrement())
+  section_number      Int       @unique(map: "ndis_prompt_definitions_section_number_unique")
+  section_name        String    @db.VarChar(255)
+  section_description String?
+  main_prompt         String?
+  field_prompts       Json?     @db.Json
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+  temperature         Decimal   @default(0.3) @db.Decimal(2, 1)
+}
+
+model notification_settings {
+  id         BigInt    @id @default(autoincrement())
+  type       String    @db.VarChar(255)
+  user_id    BigInt
+  name       String    @db.VarChar(255)
+  active     Boolean   @default(true)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  sms_active Boolean   @default(false)
+}
+
+model participant_worker {
+  id             BigInt       @id @default(autoincrement())
+  participant_id BigInt
+  worker_id      BigInt
+  created_at     DateTime?    @db.Timestamp(0)
+  updated_at     DateTime?    @db.Timestamp(0)
+  participants   participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "participant_worker_participant_id_foreign")
+  customers      customers    @relation(fields: [worker_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "participant_worker_worker_id_foreign")
+
+  @@unique([participant_id, worker_id], map: "participant_worker_participant_id_worker_id_unique")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model participants {
+  id                                 BigInt                  @id @default(autoincrement())
+  provider_company_id                BigInt
+  first_name                         String                  @db.VarChar(255)
+  last_name                          String?                 @db.VarChar(255)
+  dob                                DateTime?               @db.Date
+  gender                             String?                 @db.VarChar(255)
+  contact_phone                      String?                 @db.VarChar(255)
+  contact_email                      String?                 @db.VarChar(255)
+  assigned_practitioner_id           BigInt?
+  status                             String                  @default("active") @db.VarChar(255)
+  medical_conditions                 String?
+  created_at                         DateTime?               @db.Timestamp(0)
+  updated_at                         DateTime?               @db.Timestamp(0)
+  medications                        String?
+  disabilities                       String?
+  behaviours_of_concern              String?
+  triggers_antecedents               String?
+  early_warning_signs                String?
+  escalation_patterns                String?
+  behaviour_overview_summary         String?
+  behavioural_tendencies             String?
+  proactive_strategies               String?
+  reactive_strategies                String?
+  escalation_steps                   String?
+  restricted_practices               String?
+  support_requirements               String?
+  risk_indicators                    String?
+  risk_factors                       String?
+  sensory_profile                    String?
+  communication_style                String?
+  environmental_needs                String?
+  support_environment_family_context String?
+  functional_daily_living_profile    String?
+  pronouns                           String?                 @db.VarChar(50)
+  street_address                     String?                 @db.VarChar(255)
+  suburb                             String?                 @db.VarChar(255)
+  state                              String?                 @db.VarChar(50)
+  postcode                           String?                 @db.VarChar(10)
+  ndis_number                        String?                 @db.VarChar(50)
+  plan_type                          String?                 @db.VarChar(100)
+  plan_start_date                    DateTime?               @db.Date
+  plan_end_date                      DateTime?               @db.Date
+  commencement_date                  DateTime?               @db.Date
+  check_in_period                    String?                 @db.VarChar(50)
+  external_id                        String?                 @db.VarChar(100)
+  primary_diagnosis                  String?
+  secondary_diagnosis                String?
+  de_escalation_strategies           String?
+  has_restrictive_practices          Boolean?                @default(false)
+  tags                               Json?                   @db.Json
+  custom_info_items                  Json?                   @db.Json
+  primary_worker_id                  BigInt?
+  plan_manager_name                  String?                 @db.VarChar(255)
+  plan_manager_email                 String?                 @db.VarChar(255)
+  self_managed_invoice_email         String?                 @db.VarChar(255)
+  additional_plan_managed_emails     String?
+  additional_self_managed_emails     String?
+  show_address_on_invoices           Boolean?                @default(false)
+  show_task_name_on_invoices         Boolean?                @default(false)
+  is_non_ndis                        Boolean?                @default(false)
+  last_checkin_date                  DateTime?               @db.Timestamp(6)
+  profile_photo                      String?                 @db.VarChar(255)
+  evidence_packs                     evidence_packs[]
+  incidents                          incidents[]
+  participant_alerts                 participant_alerts[]
+  participant_contacts               participant_contacts[]
+  participant_documents              participant_documents[]
+  participant_goals                  participant_goals[]
+  participant_notes                  participant_notes[]
+  participant_plans                  participant_plans[]
+  participant_records                participant_records[]
+  participant_risks                  participant_risks[]
+  participant_worker                 participant_worker[]
+  customers                          customers?              @relation(fields: [assigned_practitioner_id], references: [id], onUpdate: NoAction, map: "participants_assigned_practitioner_id_foreign")
+  provider_companies                 provider_companies      @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "participants_provider_company_id_foreign")
+  plan_services                      plan_services[]
+  sc_participant_access              sc_participant_access[]
+  participant_plan_goals             participant_plan_goals[]
+  participant_plan_budgets           participant_plan_budgets[]
+  is_demo                            Boolean                 @default(false)
+
+  @@index([assigned_practitioner_id], map: "participants_assigned_practitioner_id_index")
+  @@index([provider_company_id, status], map: "participants_provider_company_id_status_index")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model password_resets {
+  email      String    @db.VarChar(255)
+  token      String    @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+
+  @@index([email], map: "password_resets_email_index")
+  @@ignore
+}
+
+model permissions {
+  id                    BigInt                  @id @default(autoincrement())
+  name                  String                  @db.VarChar(255)
+  guard_name            String                  @db.VarChar(255)
+  created_at            DateTime?               @db.Timestamp(0)
+  updated_at            DateTime?               @db.Timestamp(0)
+  model_has_permissions model_has_permissions[]
+  role_has_permissions  role_has_permissions[]
+
+  @@unique([name, guard_name], map: "permissions_name_guard_name_unique")
+}
+
+model personal_access_tokens {
+  id             BigInt    @id @default(autoincrement())
+  tokenable_type String    @db.VarChar(255)
+  tokenable_id   BigInt
+  name           String    @db.VarChar(255)
+  token          String    @unique(map: "personal_access_tokens_token_unique") @db.VarChar(64)
+  abilities      String?
+  last_used_at   DateTime? @db.Timestamp(0)
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
+  expires_at     DateTime? @db.Timestamp(0)
+
+  @@index([tokenable_type, tokenable_id], map: "personal_access_tokens_tokenable_type_tokenable_id_index")
+}
+
+model premises {
+  id                  BigInt    @id @default(autoincrement())
+  provider_company_id BigInt
+  name                String    @db.VarChar(255)
+  active              Boolean   @default(true)
+  address_line_1      String?   @db.VarChar(255)
+  address_line_2      String?   @db.VarChar(255)
+  suburb              String?   @db.VarChar(255)
+  state               String?   @db.VarChar(255)
+  post_code           String?   @db.VarChar(255)
+  phone               String?   @db.VarChar(255)
+  email               String?   @db.VarChar(255)
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+  longitude           String?   @db.VarChar(255)
+  latitude            String?   @db.VarChar(255)
+}
+
+model provider_companies {
+  id                                  BigInt                  @id @default(autoincrement())
+  name                                String                  @db.VarChar(255)
+  business_logo                       String?                 @db.VarChar(255)
+  abn                                 String?                 @db.VarChar(255)
+  description                         String?
+  organisation_type                   String?
+  registered_for_ndis                 Boolean                 @default(false)
+  registered_for_ndis_early_childhood Boolean                 @default(false)
+  company_phone                       String?                 @db.VarChar(255)
+  company_email                       String?                 @db.VarChar(255)
+  company_website                     String?                 @db.VarChar(255)
+  facebook_url                        String?                 @db.VarChar(255)
+  linkedin_url                        String?                 @db.VarChar(255)
+  instagram_url                       String?                 @db.VarChar(255)
+  twitter_url                         String?                 @db.VarChar(255)
+  photo_gallery                       Json?                   @db.Json
+  created_at                          DateTime?               @db.Timestamp(0)
+  updated_at                          DateTime?               @db.Timestamp(0)
+  imported_from_csv                   Boolean                 @default(false)
+  is_claimed                          Boolean                 @default(true)
+  claim_email                         String?                 @db.VarChar(255)
+  brand_primary_color                 String?                 @db.VarChar(7)
+  brand_secondary_color               String?                 @db.VarChar(7)
+  pwa_app_name                        String?                 @db.VarChar(40)
+  pwa_app_subtitle                    String?                 @db.VarChar(80)
+  ai_usage_logs                       ai_usage_logs[]
+  bsp_analysis_reports                bsp_analysis_reports[]
+  claim_requests                      claim_requests[]
+  evidence_packs                      evidence_packs[]
+  incidents                           incidents[]
+  participants                        participants[]
+  review_invitations                  review_invitations[]
+  review_replies                      review_replies[]
+  sc_participant_access               sc_participant_access[]
+  sc_provider_access                  sc_provider_access[]
+  stripe_customers                    stripe_customers[]
+  subscriptions                       subscriptions[]
+
+  @@index([is_claimed], map: "provider_companies_is_claimed_index")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model provider_company_imports {
+  id                  BigInt    @id @default(autoincrement())
+  admin_id            BigInt?
+  import_id           String    @unique(map: "provider_company_imports_import_id_unique") @db.VarChar(255)
+  csv_file_path       String    @db.VarChar(255)
+  csv_file_name       String    @db.VarChar(255)
+  start_row           Int
+  end_row             Int
+  default_values      Json?     @db.Json
+  column_mapping      Json?     @db.Json
+  status              String    @default("pending") @db.VarChar(255)
+  started_at          DateTime? @db.Timestamp(0)
+  completed_at        DateTime? @db.Timestamp(0)
+  total_rows          Int       @default(0)
+  processed_rows      Int       @default(0)
+  successful_rows     Int       @default(0)
+  failed_rows         Int       @default(0)
+  skipped_rows        Int       @default(0)
+  validation_results  Json?     @db.Json
+  import_results      Json?     @db.Json
+  skipped_row_details Json?     @db.Json
+  error_message       String?
+  duration_seconds    Int?
+  log_file_path       String?   @db.VarChar(255)
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+  admins              admins?   @relation(fields: [admin_id], references: [id], onUpdate: NoAction, map: "provider_company_imports_admin_id_foreign")
+
+  @@index([admin_id], map: "provider_company_imports_admin_id_index")
+  @@index([created_at], map: "provider_company_imports_created_at_index")
+  @@index([status], map: "provider_company_imports_status_index")
+}
+
+model provider_company_service_request {
+  id                  BigInt    @id @default(autoincrement())
+  service_request_id  BigInt
+  provider_company_id BigInt
+  status              String?   @db.VarChar(255)
+  customer_contacted  Boolean   @default(false)
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+}
+
+model pulse_aggregates {
+  id        BigInt  @id @default(autoincrement())
+  bucket    Int
+  period    Int
+  type      String  @db.VarChar(255)
+  key       String
+  key_hash  String  @db.Uuid
+  aggregate String  @db.VarChar(255)
+  value     Decimal @db.Decimal(20, 2)
+  count     Int?
+
+  @@unique([bucket, period, type, aggregate, key_hash], map: "pulse_aggregates_bucket_period_type_aggregate_key_hash_unique")
+  @@index([period, bucket], map: "pulse_aggregates_period_bucket_index")
+  @@index([period, type, aggregate, bucket], map: "pulse_aggregates_period_type_aggregate_bucket_index")
+  @@index([type], map: "pulse_aggregates_type_index")
+  @@ignore
+}
+
+model pulse_entries {
+  id        BigInt  @id @default(autoincrement())
+  timestamp Int
+  type      String  @db.VarChar(255)
+  key       String
+  key_hash  String  @db.Uuid
+  value     BigInt?
+
+  @@index([key_hash], map: "pulse_entries_key_hash_index")
+  @@index([timestamp], map: "pulse_entries_timestamp_index")
+  @@index([timestamp, type, key_hash, value], map: "pulse_entries_timestamp_type_key_hash_value_index")
+  @@index([type], map: "pulse_entries_type_index")
+  @@ignore
+}
+
+model pulse_values {
+  id        BigInt @id @default(autoincrement())
+  timestamp Int
+  type      String @db.VarChar(255)
+  key       String
+  key_hash  String @db.Uuid
+  value     String
+
+  @@unique([type, key_hash], map: "pulse_values_type_key_hash_unique")
+  @@index([timestamp], map: "pulse_values_timestamp_index")
+  @@index([type], map: "pulse_values_type_index")
+  @@ignore
+}
+
+model review_invitations {
+  id                  BigInt             @id @default(autoincrement())
+  provider_company_id BigInt
+  token               String             @unique(map: "review_invitations_token_unique") @db.VarChar(255)
+  customer_phone      String?            @db.VarChar(255)
+  customer_email      String?            @db.VarChar(255)
+  used                Boolean            @default(false)
+  sms_code            String?            @db.VarChar(6)
+  sms_attempts        Int                @default(0)
+  last_sms_sent_at    DateTime?          @db.Timestamp(0)
+  expires_at          DateTime           @db.Timestamp(0)
+  created_at          DateTime?          @db.Timestamp(0)
+  updated_at          DateTime?          @db.Timestamp(0)
+  provider_companies  provider_companies @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_invitations_provider_company_id_foreign")
+
+  @@index([provider_company_id], map: "review_invitations_provider_company_id_index")
+  @@index([token], map: "review_invitations_token_index")
+}
+
+model review_replies {
+  id                  BigInt             @id @default(autoincrement())
+  review_id           BigInt             @unique(map: "review_replies_review_id_unique")
+  user_id             BigInt
+  provider_company_id BigInt
+  content             String
+  created_at          DateTime?          @db.Timestamp(0)
+  updated_at          DateTime?          @db.Timestamp(0)
+  provider_companies  provider_companies @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_replies_provider_company_id_foreign")
+  reviews             reviews            @relation(fields: [review_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_replies_review_id_foreign")
+  users               users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "review_replies_user_id_foreign")
+}
+
+model reviews {
+  id                  BigInt          @id @default(autoincrement())
+  provider_company_id BigInt
+  customer_id         BigInt
+  service_offering_id BigInt
+  rating              Int             @default(0) @db.SmallInt
+  content             String?
+  responded           Boolean         @default(false)
+  created_at          DateTime?       @db.Timestamp(0)
+  updated_at          DateTime?       @db.Timestamp(0)
+  reply               String?
+  review_replies      review_replies?
+  is_demo             Boolean         @default(false)
+}
+
+model role_has_permissions {
+  permission_id BigInt
+  role_id       BigInt
+  permissions   permissions @relation(fields: [permission_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_has_permissions_permission_id_foreign")
+  roles         roles       @relation(fields: [role_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "role_has_permissions_role_id_foreign")
+
+  @@id([permission_id, role_id])
+}
+
+model roles {
+  id                   BigInt                 @id @default(autoincrement())
+  name                 String                 @db.VarChar(255)
+  guard_name           String                 @db.VarChar(255)
+  created_at           DateTime?              @db.Timestamp(0)
+  updated_at           DateTime?              @db.Timestamp(0)
+  model_has_roles      model_has_roles[]
+  role_has_permissions role_has_permissions[]
+
+  @@unique([name, guard_name], map: "roles_name_guard_name_unique")
+}
+
+model service_locations {
+  id                  BigInt            @id @default(autoincrement())
+  service_offering_id BigInt
+  latitude            Decimal           @db.Decimal(10, 8)
+  longitude           Decimal           @db.Decimal(11, 8)
+  radius_km           Decimal           @db.Decimal(8, 2)
+  created_at          DateTime?         @db.Timestamp(0)
+  updated_at          DateTime?         @db.Timestamp(0)
+  service_offerings   service_offerings @relation(fields: [service_offering_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "service_locations_service_offering_id_foreign")
+
+  @@index([latitude, longitude], map: "service_locations_latitude_longitude_index")
+  @@index([service_offering_id], map: "service_locations_service_offering_id_index")
+}
+
+model service_offerings {
+  id                        BigInt              @id @default(autoincrement())
+  service_id                BigInt
+  description               String?
+  created_at                DateTime?           @db.Timestamp(0)
+  updated_at                DateTime?           @db.Timestamp(0)
+  provider_company_id       BigInt
+  service_delivered_options Json?               @db.Json
+  age_group_options         Json?               @db.Json
+  language_options          Json?               @db.Json
+  service_available_options Json?               @db.Json
+  address_options           Json?               @db.Json
+  active                    Boolean             @default(false)
+  service_locations         service_locations[]
+  is_demo                   Boolean             @default(false)
+}
+
+model service_requests {
+  id                        BigInt    @id @default(autoincrement())
+  provider_company_id       BigInt?
+  service_offering_id       BigInt?
+  service_id                BigInt
+  customer_id               BigInt?
+  status                    String    @db.VarChar(255)
+  address                   String?
+  city                      String?   @db.VarChar(255)
+  state                     String?   @db.VarChar(255)
+  country                   String?   @db.VarChar(255)
+  zip_code                  String?   @db.VarChar(255)
+  actioned_at               DateTime? @db.Timestamp(0)
+  created_at                DateTime? @db.Timestamp(0)
+  updated_at                DateTime? @db.Timestamp(0)
+  description               String?
+  longitude                 String?   @db.VarChar(255)
+  latitude                  String?   @db.VarChar(255)
+  gender                    String?   @db.VarChar(255)
+  first_name                String?   @db.VarChar(255)
+  last_name                 String?   @db.VarChar(255)
+  service_delivered_options Json?     @db.Json
+  age_group_options         Json?     @db.Json
+  phone                     String?   @db.VarChar(255)
+  email                     String?   @db.VarChar(255)
+  direct_connect            Boolean   @default(false)
+}
+
+model services {
+  id           BigInt    @id @default(autoincrement())
+  name         String    @db.VarChar(255)
+  active       Boolean   @default(false)
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+  service_icon String?
+}
+
+model settings {
+  id         BigInt    @id @default(autoincrement())
+  key        String    @db.VarChar(255)
+  value      String    @db.VarChar(255)
+  parent     String?   @db.VarChar(255)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model stripe_configurations {
+  id                              BigInt            @id @default(autoincrement())
+  environment                     String            @default("test") @db.VarChar(255)
+  publishable_key                 String
+  secret_key                      String
+  webhook_secret                  String?
+  billing_portal_configuration_id String?           @db.VarChar(255)
+  active                          Boolean           @default(true)
+  created_at                      DateTime?         @db.Timestamp(0)
+  updated_at                      DateTime?         @db.Timestamp(0)
+  trial_enabled                   Boolean           @default(false)
+  trial_period_days               Int               @default(30)
+  trial_require_payment_method    Boolean           @default(true)
+  trial_description               String?
+  stripe_products                 stripe_products[]
+
+  @@unique([environment, active], map: "stripe_configurations_environment_active_unique")
+}
+
+model stripe_customers {
+  id                  BigInt             @id @default(autoincrement())
+  user_id             BigInt
+  provider_company_id BigInt
+  stripe_customer_id  String             @unique(map: "stripe_customers_stripe_customer_id_unique") @db.VarChar(255)
+  email               String             @db.VarChar(255)
+  name                String?            @db.VarChar(255)
+  created_at          DateTime?          @db.Timestamp(0)
+  updated_at          DateTime?          @db.Timestamp(0)
+  provider_companies  provider_companies @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "stripe_customers_provider_company_id_foreign")
+  users               users              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "stripe_customers_user_id_foreign")
+  subscriptions       subscriptions[]
+
+  @@index([provider_company_id], map: "stripe_customers_provider_company_id_index")
+  @@index([stripe_customer_id], map: "stripe_customers_stripe_customer_id_index")
+  @@index([user_id], map: "stripe_customers_user_id_index")
+}
+
+model stripe_products {
+  id                      BigInt                  @id @default(autoincrement())
+  stripe_configuration_id BigInt
+  stripe_product_id       String?                 @unique(map: "stripe_products_stripe_product_id_unique") @db.VarChar(255)
+  stripe_price_id         String?                 @unique(map: "stripe_products_stripe_price_id_unique") @db.VarChar(255)
+  name                    String                  @db.VarChar(255)
+  description             String?
+  amount                  Int
+  currency                String                  @default("aud") @db.VarChar(3)
+  interval                String                  @db.VarChar(255)
+  interval_count          Int                     @default(1)
+  active                  Boolean                 @default(true)
+  metadata                Json?                   @db.Json
+  created_at              DateTime?               @db.Timestamp(0)
+  updated_at              DateTime?               @db.Timestamp(0)
+  stripe_configurations   stripe_configurations   @relation(fields: [stripe_configuration_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "stripe_products_stripe_configuration_id_foreign")
+  subscription_ai_limits  subscription_ai_limits?
+}
+
+model stripe_webhook_events {
+  id              BigInt    @id @default(autoincrement())
+  stripe_event_id String    @unique(map: "stripe_webhook_events_stripe_event_id_unique") @db.VarChar(255)
+  event_type      String    @db.VarChar(255)
+  processed       Boolean   @default(false)
+  processed_at    DateTime? @db.Timestamp(0)
+  payload         Json      @db.Json
+  created_at      DateTime? @db.Timestamp(0)
+  updated_at      DateTime? @db.Timestamp(0)
+
+  @@index([event_type], map: "stripe_webhook_events_event_type_index")
+  @@index([processed], map: "stripe_webhook_events_processed_index")
+  @@index([stripe_event_id], map: "stripe_webhook_events_stripe_event_id_index")
+}
+
+model subscription_items {
+  id                          BigInt        @id @default(autoincrement())
+  subscription_id             BigInt
+  stripe_subscription_item_id String        @unique(map: "subscription_items_stripe_subscription_item_id_unique") @db.VarChar(255)
+  stripe_price_id             String        @db.VarChar(255)
+  stripe_product_id           String        @db.VarChar(255)
+  quantity                    Int           @default(1)
+  created_at                  DateTime?     @db.Timestamp(0)
+  updated_at                  DateTime?     @db.Timestamp(0)
+  subscriptions               subscriptions @relation(fields: [subscription_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "subscription_items_subscription_id_foreign")
+
+  @@index([stripe_subscription_item_id], map: "subscription_items_stripe_subscription_item_id_index")
+  @@index([subscription_id], map: "subscription_items_subscription_id_index")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model subscriptions {
+  id                     BigInt               @id @default(autoincrement())
+  stripe_customer_id     BigInt
+  user_id                BigInt
+  provider_company_id    BigInt
+  stripe_subscription_id String               @unique(map: "subscriptions_stripe_subscription_id_unique") @db.VarChar(255)
+  stripe_price_id        String               @db.VarChar(255)
+  stripe_product_id      String               @db.VarChar(255)
+  status                 String               @db.VarChar(255)
+  current_period_start   DateTime?            @db.Timestamp(0)
+  current_period_end     DateTime?            @db.Timestamp(0)
+  trial_start            DateTime?            @db.Timestamp(0)
+  trial_end              DateTime?            @db.Timestamp(0)
+  canceled_at            DateTime?            @db.Timestamp(0)
+  ended_at               DateTime?            @db.Timestamp(0)
+  created_at             DateTime?            @db.Timestamp(0)
+  updated_at             DateTime?            @db.Timestamp(0)
+  cancel_at_period_end   Boolean              @default(false)
+  subscription_items     subscription_items[]
+  provider_companies     provider_companies   @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "subscriptions_provider_company_id_foreign")
+  stripe_customers       stripe_customers     @relation(fields: [stripe_customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "subscriptions_stripe_customer_id_foreign")
+  users                  users                @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "subscriptions_user_id_foreign")
+
+  @@index([provider_company_id], map: "subscriptions_provider_company_id_index")
+  @@index([status], map: "subscriptions_status_index")
+  @@index([stripe_customer_id], map: "subscriptions_stripe_customer_id_index")
+  @@index([stripe_subscription_id], map: "subscriptions_stripe_subscription_id_index")
+  @@index([user_id], map: "subscriptions_user_id_index")
+}
+
+model users {
+  id                                             BigInt                   @id @default(autoincrement())
+  email                                          String                   @unique(map: "users_email_unique") @db.VarChar(255)
+  email_verified_at                              DateTime?                @db.Timestamp(0)
+  password                                       String                   @db.VarChar(255)
+  remember_token                                 String?                  @db.VarChar(100)
+  created_at                                     DateTime?                @db.Timestamp(0)
+  updated_at                                     DateTime?                @db.Timestamp(0)
+  first_name                                     String?                  @db.VarChar(255)
+  last_name                                      String?                  @db.VarChar(255)
+  phone                                          String?                  @db.VarChar(255)
+  job_role                                       String?                  @db.VarChar(255)
+  ndis                                           Boolean                  @default(false)
+  provider_company_id                            BigInt
+  active                                         Boolean                  @default(false)
+  admin                                          Boolean                  @default(false)
+  permission_editor                              Boolean                  @default(false)
+  permission_review                              Boolean                  @default(false)
+  permission_billing                             Boolean                  @default(false)
+  permission_intake                              Boolean                  @default(false)
+  google_id                                      String?                  @db.VarChar(255)
+  permission_incident_approver                   Boolean?                 @default(false)
+  profile_photo_url                              String?                  @db.VarChar(500)
+  incident_notifications                         incident_notifications[]
+  incidents_incidents_approved_by_user_idTousers incidents[]              @relation("incidents_approved_by_user_idTousers")
+  incidents_incidents_customer_idTousers         incidents[]              @relation("incidents_customer_idTousers")
+  incidents_incidents_locked_by_user_idTousers   incidents[]              @relation("incidents_locked_by_user_idTousers")
+  incidents_incidents_reporting_user_idTousers   incidents[]              @relation("incidents_reporting_user_idTousers")
+  participant_alerts                             participant_alerts[]
+  participant_notes                              participant_notes[]
+  participant_risks                              participant_risks[]
+  review_replies                                 review_replies[]
+  stripe_customers                               stripe_customers[]
+  subscriptions                                  subscriptions[]
+}
+
+model participant_contacts {
+  id             BigInt       @id @default(autoincrement())
+  participant_id BigInt
+  first_name     String       @db.VarChar(255)
+  last_name      String?      @db.VarChar(255)
+  relationship   String?      @db.VarChar(100)
+  phone          String?      @db.VarChar(50)
+  email          String?      @db.VarChar(255)
+  organisation   String?      @db.VarChar(255)
+  is_emergency   Boolean      @default(false)
+  is_starred     Boolean      @default(false)
+  notes          String?
+  created_at     DateTime?    @db.Timestamp(0)
+  participants   participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_participant_contacts_participant")
+}
+
+model participant_documents {
+  id             BigInt       @id @default(autoincrement())
+  participant_id BigInt
+  document_name  String       @db.VarChar(255)
+  category       String?      @db.VarChar(100)
+  file_path      String       @db.VarChar(500)
+  file_size      Int?
+  expiry_date    DateTime?    @db.Date
+  uploaded_by_id BigInt?
+  created_at     DateTime?    @db.Timestamp(0)
+  participants   participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_participant_documents_participant")
+}
+
+model participant_goals {
+  id                 BigInt       @id @default(autoincrement())
+  participant_id     BigInt
+  goal_name          String       @db.VarChar(255)
+  goal_type          String?      @db.VarChar(100)
+  status             String       @default("In Progress") @db.VarChar(50)
+  description        String?
+  strategies         String?
+  barriers           String?
+  visible_to_workers Boolean      @default(true)
+  created_at         DateTime?    @db.Timestamp(0)
+  updated_at         DateTime?    @db.Timestamp(0)
+  participants       participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_participant_goals_participant")
+}
+
+model participant_notes {
+  id             BigInt       @id @default(autoincrement())
+  participant_id BigInt
+  author_id      BigInt?
+  content        String
+  created_at     DateTime?    @db.Timestamp(0)
+  updated_at     DateTime?    @db.Timestamp(0)
+  users          users?       @relation(fields: [author_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  participants   participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_participant_notes_participant")
+}
+
+model participant_records {
+  id             BigInt       @id @default(autoincrement())
+  participant_id BigInt
+  record_name    String       @db.VarChar(255)
+  record_type    String?      @db.VarChar(100)
+  start_date     DateTime?    @db.Date
+  expiry_date    DateTime?    @db.Date
+  notes          String?
+  file_path      String?      @db.VarChar(500)
+  created_by_id  BigInt?
+  created_at     DateTime?    @db.Timestamp(0)
+  updated_at     DateTime?    @db.Timestamp(0)
+  participants   participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_participant_records_participant")
+}
+
+model participant_plans {
+  id                    BigInt          @id @default(autoincrement())
+  participant_id        BigInt
+  plan_start_date       DateTime?       @db.Date
+  plan_end_date         DateTime?       @db.Date
+  total_funded_supports Decimal?        @db.Decimal(12, 2)
+  notes                 String?
+  created_at            DateTime?       @db.Timestamp(0)
+  updated_at            DateTime?       @db.Timestamp(0)
+  participants          participants    @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  plan_services         plan_services[]
+
+  @@index([participant_id], map: "idx_participant_plans_pid")
+}
+
+model plan_services {
+  id                  BigInt            @id @default(autoincrement())
+  plan_id             BigInt
+  participant_id      BigInt
+  service_name        String            @db.VarChar(255)
+  service_category    String?           @db.VarChar(255)
+  management_type     String?           @db.VarChar(50)
+  service_type        String?           @db.VarChar(100)
+  budget_amount       Decimal?          @db.Decimal(12, 2)
+  coordinator_id      BigInt?
+  default_charge_item String?
+  notes               String?
+  created_at          DateTime?         @db.Timestamp(0)
+  updated_at          DateTime?         @db.Timestamp(0)
+  participants        participants      @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  participant_plans   participant_plans @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_plan_services_pid")
+  @@index([plan_id], map: "idx_plan_services_plan_id")
+}
+
+model participant_alerts {
+  id             BigInt       @id @default(autoincrement())
+  participant_id BigInt
+  title          String       @db.VarChar(255)
+  description    String?
+  severity       String       @default("info") @db.VarChar(20)
+  is_active      Boolean      @default(true)
+  created_by_id  BigInt?
+  created_at     DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at     DateTime?    @db.Timestamp(6)
+  users          users?       @relation(fields: [created_by_id], references: [id], onUpdate: NoAction)
+  participants   participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_participant_alerts_pid")
+}
+
+model participant_risks {
+  id                  BigInt       @id @default(autoincrement())
+  participant_id      BigInt
+  title               String       @db.VarChar(255)
+  category            String?      @db.VarChar(100)
+  description         String?
+  likelihood          String       @db.VarChar(20)
+  consequence         String       @db.VarChar(20)
+  risk_level          String?      @db.VarChar(20)
+  mitigation_strategy String?
+  review_date         DateTime?    @db.Date
+  status              String       @default("active") @db.VarChar(50)
+  created_by_id       BigInt?
+  created_at          DateTime?    @default(now()) @db.Timestamp(6)
+  updated_at          DateTime?    @db.Timestamp(6)
+  users               users?       @relation(fields: [created_by_id], references: [id], onUpdate: NoAction)
+  participants        participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_participant_risks_pid")
+}
+
+model ai_usage_logs {
+  id                  BigInt              @id @default(autoincrement())
+  provider_company_id BigInt?
+  ai_model_id         BigInt?
+  purpose             String?             @db.VarChar(50)
+  input_tokens        Int?                @default(0)
+  output_tokens       Int?                @default(0)
+  estimated_cost_usd  Decimal?            @default(0) @db.Decimal(10, 6)
+  reference_id        BigInt?
+  reference_type      String?             @db.VarChar(50)
+  created_at          DateTime?           @default(now()) @db.Timestamptz(6)
+  ai_models           ai_models?          @relation(fields: [ai_model_id], references: [id], onUpdate: NoAction)
+  provider_companies  provider_companies? @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at], map: "idx_ai_usage_logs_created")
+  @@index([provider_company_id], map: "idx_ai_usage_logs_provider")
+}
+
+model subscription_ai_limits {
+  id                     BigInt           @id @default(autoincrement())
+  stripe_product_id      BigInt?          @unique
+  ai_model_id            BigInt?
+  monthly_incident_limit Int?
+  monthly_cost_limit_usd Decimal?         @db.Decimal(10, 2)
+  overage_action         String?          @default("block") @db.VarChar(20)
+  created_at             DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime?        @default(now()) @db.Timestamptz(6)
+  ai_models              ai_models?       @relation(fields: [ai_model_id], references: [id], onUpdate: NoAction)
+  stripe_products        stripe_products? @relation(fields: [stripe_product_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+/// SC (Support Coordinator) organisation — the SC's business entity
+model sc_organisations {
+  id                    BigInt                  @id @default(autoincrement())
+  name                  String                  @db.VarChar(255)
+  abn                   String?                 @db.VarChar(50)
+  contact_email         String                  @db.VarChar(255)
+  is_active             Boolean                 @default(true)
+  created_at            DateTime?               @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamptz(6)
+  evidence_packs        evidence_packs[]
+  sc_participant_access sc_participant_access[]
+  sc_provider_access    sc_provider_access[]
+  sc_users              sc_users[]
+}
+
+/// Individual SC user — login credentials + link to SC org
+model sc_users {
+  id               BigInt           @id @default(autoincrement())
+  sc_org_id        BigInt
+  email            String           @unique(map: "sc_users_email_unique") @db.VarChar(255)
+  password         String           @db.VarChar(255)
+  first_name       String           @db.VarChar(255)
+  last_name        String?          @db.VarChar(255)
+  phone            String?          @db.VarChar(255)
+  is_active        Boolean          @default(true)
+  created_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?        @default(now()) @db.Timestamptz(6)
+  role             String           @default("member") @db.VarChar(20)
+  evidence_packs   evidence_packs[]
+  sc_organisations sc_organisations @relation(fields: [sc_org_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([sc_org_id], map: "idx_sc_users_sc_org")
+}
+
+/// Top-level consent: SC org has been granted access to a provider's data
+model sc_provider_access {
+  id                    BigInt                  @id @default(autoincrement())
+  sc_org_id             BigInt?
+  provider_company_id   BigInt
+  invited_by_user_id    BigInt
+  invitation_token      String?                 @db.VarChar(255)
+  invitation_expires_at DateTime?               @db.Timestamptz(6)
+  invitation_email      String?                 @db.VarChar(255)
+  invitation_note       String?
+  status                String                  @default("pending") @db.VarChar(20)
+  created_at            DateTime?               @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?               @default(now()) @db.Timestamptz(6)
+  sc_participant_access sc_participant_access[]
+  provider_companies    provider_companies      @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sc_organisations      sc_organisations?       @relation(fields: [sc_org_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([sc_org_id, provider_company_id], map: "idx_sc_provider_access_org_provider")
+  @@index([provider_company_id], map: "idx_sc_provider_access_provider")
+}
+
+/// Per-participant access grant — what RLS/app-layer reads
+model sc_participant_access {
+  id                    BigInt             @id @default(autoincrement())
+  sc_org_id             BigInt
+  sc_provider_access_id BigInt
+  participant_id        BigInt
+  provider_company_id   BigInt
+  access_type           String             @default("read") @db.VarChar(20)
+  granted_at            DateTime?          @default(now()) @db.Timestamptz(6)
+  expires_at            DateTime?          @db.Timestamptz(6)
+  revoked_at            DateTime?          @db.Timestamptz(6)
+  participants          participants       @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  provider_companies    provider_companies @relation(fields: [provider_company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sc_organisations      sc_organisations   @relation(fields: [sc_org_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sc_provider_access    sc_provider_access @relation(fields: [sc_provider_access_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([sc_org_id], map: "idx_sc_participant_access_org")
+  @@index([participant_id], map: "idx_sc_participant_access_participant")
+  @@index([provider_company_id], map: "idx_sc_participant_access_provider")
+}
+
+/// Evidence packs generated by the Evidence Engine for NDIS plan reviews
+model evidence_packs {
+  id                    BigInt             @id @default(autoincrement())
+  participant_id        BigInt
+  provider_id           BigInt
+  sc_org_id             BigInt
+  created_by_sc_user_id BigInt
+  status                String             @default("draft") @db.VarChar(20)
+  ai_model_used         String?            @db.VarChar(100)
+  ai_json_output        Json?
+  edited_json_output    Json?
+  pdf_storage_path      String?            @db.VarChar(500)
+  incident_ids_used     BigInt[]
+  generation_error      String?
+  created_at            DateTime?          @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?          @default(now()) @db.Timestamptz(6)
+  sc_users              sc_users           @relation(fields: [created_by_sc_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  participants          participants       @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  provider_companies    provider_companies @relation(fields: [provider_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  sc_organisations      sc_organisations   @relation(fields: [sc_org_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_evidence_packs_participant")
+  @@index([provider_id], map: "idx_evidence_packs_provider")
+  @@index([sc_org_id], map: "idx_evidence_packs_sc_org")
+  @@index([created_by_sc_user_id], map: "idx_evidence_packs_sc_user")
+}
+
+model incident_notifications {
+  id                     BigInt    @id @default(autoincrement())
+  incident_id            BigInt
+  notification_type      String    @db.VarChar(50)
+  notification_form_type String?   @db.VarChar(20)
+  recipient_user_id      BigInt?
+  recipient_email        String?   @db.VarChar(255)
+  sent_at                DateTime? @db.Timestamptz(6)
+  deadline_at            DateTime? @db.Timestamptz(6)
+  status                 String    @default("pending") @db.VarChar(20)
+  created_at             DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime  @default(now()) @db.Timestamptz(6)
+  incidents              incidents @relation(fields: [incident_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users                  users?    @relation(fields: [recipient_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([incident_id], map: "idx_incident_notifications_incident_id")
+  @@index([status], map: "idx_incident_notifications_status")
+}
+
+model ui_badge_configs {
+  id            BigInt    @id @default(autoincrement())
+  domain        String    @db.VarChar(50)
+  value         String    @db.VarChar(50)
+  label         String    @db.VarChar(100)
+  badge_variant String    @db.VarChar(30)
+  chart_color   String    @db.VarChar(60)
+  sort_order    Int       @default(0)
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@unique([domain, value], map: "ui_badge_configs_domain_value_unique")
+  @@index([domain], map: "idx_ui_badge_configs_domain")
+}
+
+model participant_plan_goals {
+  id               BigInt       @id @default(autoincrement())
+  participant_id   BigInt
+  goal_text        String       @db.Text
+  support_category String?      @db.VarChar(255)
+  status           String       @default("active") @db.VarChar(50)
+  progress_notes   String?      @db.Text
+  data_source      String       @default("manual") @db.VarChar(50)
+  external_goal_id String?      @db.VarChar(255)
+  created_at       DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?    @default(now()) @db.Timestamptz(6)
+  participants     participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([participant_id], map: "idx_participant_plan_goals_pid")
+}
+
+model participant_plan_budgets {
+  id                      BigInt       @id @default(autoincrement())
+  participant_id          BigInt
+  support_category_number String       @db.VarChar(10)
+  support_category_name   String       @db.VarChar(255)
+  support_category_type   String       @db.VarChar(50)
+  allocated_amount        Decimal      @db.Decimal(10, 2)
+  spent_amount            Decimal      @default(0) @db.Decimal(10, 2)
+  data_source             String       @default("manual") @db.VarChar(50)
+  external_budget_id      String?      @db.VarChar(255)
+  created_at              DateTime?    @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime?    @default(now()) @db.Timestamptz(6)
+  participants            participants @relation(fields: [participant_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([participant_id, support_category_number], map: "participant_plan_budgets_pid_cat_unique")
+  @@index([participant_id], map: "idx_participant_plan_budgets_pid")
+}
+
+model ui_theme_settings {
+  id         BigInt    @id @default(autoincrement())
+  scope      String    @unique @default("global") @db.VarChar(50)
+  sidebar_bg                     String @default("#1e293b") @db.VarChar(100)
+  sidebar_foreground             String @default("#cbd5e1") @db.VarChar(100)
+  sidebar_icon                   String @default("#94a3b8") @db.VarChar(100)
+  sidebar_primary                String @default("#f1f5f9") @db.VarChar(100)
+  sidebar_primary_foreground     String @default("#1e293b") @db.VarChar(100)
+  sidebar_accent                 String @default("#334155") @db.VarChar(100)
+  sidebar_accent_foreground      String @default("#f1f5f9") @db.VarChar(100)
+  sidebar_border                 String @default("#475569") @db.VarChar(100)
+  sidebar_ring                   String @default("#94a3b8") @db.VarChar(100)
+  button_primary                 String @default("#0f172a") @db.VarChar(100)
+  button_primary_foreground      String @default("#ffffff") @db.VarChar(100)
+  app_background                 String @default("#ffffff") @db.VarChar(100)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+}
