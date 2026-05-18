@@ -43,6 +43,10 @@ export async function migrateParticipantDocuments(
       }
       const entityId = participantsMap.get(row.participant_id);
       if (!entityId) {
+        if (participantsMap.isSkipped(row.participant_id)) {
+          log.record("skipped");
+          continue;
+        }
         log.fail(row.id, `participant ${row.participant_id} not in id-map`);
         continue;
       }
@@ -97,6 +101,10 @@ export async function migrateParticipantRecords(
       }
       const entityId = participantsMap.get(row.participant_id);
       if (!entityId) {
+        if (participantsMap.isSkipped(row.participant_id)) {
+          log.record("skipped");
+          continue;
+        }
         log.fail(row.id, `participant ${row.participant_id} not in id-map`);
         continue;
       }

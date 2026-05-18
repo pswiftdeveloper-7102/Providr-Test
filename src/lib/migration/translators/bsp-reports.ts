@@ -29,6 +29,10 @@ export async function migrateBSPAnalysisReports(
 
       const incidentId = incidentsMap.get(row.incident_id);
       if (!incidentId) {
+        if (incidentsMap.isSkipped(row.incident_id)) {
+          log.record("skipped");
+          continue;
+        }
         log.fail(
           row.id,
           `incident ${row.incident_id} not in id-map — run incidents first`

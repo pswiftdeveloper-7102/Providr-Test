@@ -123,10 +123,15 @@ export async function migrateUsers(
 
       const orgId = providerOrgsMap.get(row.provider_company_id);
       if (!orgId) {
-        log.fail(
-          row.id,
-          `provider_company_id=${row.provider_company_id} not in orgs id-map — run provider_companies first`
+        // Legacy data integrity: ~28 users in the live DB have
+        // provider_company_id pointing at companies that have been
+        // deleted (dangling FK). These users have no org to belong
+        // to in the new system. Skip with a warning rather than
+        // creating an orphaned User row.
+        log.warn(
+          `users(${row.id}) ${row.email} → provider_company_id=${row.provider_company_id} doesn't exist in provider_companies (dangling legacy FK) — user skipped`
         );
+        log.record("skipped");
         continue;
       }
 

@@ -89,11 +89,10 @@ export async function migrateIncidents(
         log.record("skipped");
         continue;
       }
-      if (row.is_demo) {
-        log.record("skipped");
-        continue;
-      }
-      if (row.deleted_at) {
+      if (row.is_demo || row.deleted_at) {
+        // Mark in id-map so dependent translators (BSP reports) know to
+        // silently skip child rows rather than fail.
+        map.markSkipped(row.id);
         log.record("skipped");
         continue;
       }

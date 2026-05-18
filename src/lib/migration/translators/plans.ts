@@ -66,6 +66,10 @@ export async function migratePlans(
 
       const participantId = participantsMap.get(row.participant_id);
       if (!participantId) {
+        if (participantsMap.isSkipped(row.participant_id)) {
+          log.record("skipped");
+          continue;
+        }
         log.fail(
           row.id,
           `participant ${row.participant_id} not in id-map — run participants first`
@@ -137,6 +141,12 @@ export async function migratePlanBudgets(
   const buckets = new Map<string, Bucket>(); // key = `${planId}|${category}`
 
   for (const b of sourceBudgets) {
+    // Demo-participant budgets: silently skip (the parent participant
+    // and its plans were intentionally not migrated).
+    if (participantsMap.isSkipped(b.participant_id)) {
+      log.record("skipped");
+      continue;
+    }
     const cat = categoryFor(b.support_category_number);
     if (!cat) {
       log.warn(
@@ -146,14 +156,26 @@ export async function migratePlanBudgets(
     }
     const legacyPlanId = planByParticipant.get(b.participant_id);
     if (!legacyPlanId) {
-      log.fail(
-        b.id,
-        `no participant_plans row for participant ${b.participant_id} — cannot attach budget`
-      );
+      // Two reasons we might land here:
+      //   1. Participant was demo-skipped — silently skip the budget too.
+      //   2. Participant is real but has budgets attached without any
+      //      participant_plans row (orphaned legacy data). Warn + skip.
+      if (participantsMap.isSkipped(b.participant_id)) {
+        log.record("skipped");
+      } else {
+        log.warn(
+          `participant_plan_budgets(${b.id}) participant ${b.participant_id} has no participant_plans row — orphaned legacy data, skipped`
+        );
+        log.record("skipped");
+      }
       continue;
     }
     const targetPlanId = plansMap.get(legacyPlanId);
     if (!targetPlanId) {
+      if (plansMap.isSkipped(legacyPlanId)) {
+        log.record("skipped");
+        continue;
+      }
       log.fail(b.id, `plan ${legacyPlanId} not in id-map`);
       continue;
     }

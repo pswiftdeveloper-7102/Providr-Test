@@ -75,6 +75,10 @@ export async function migrateParticipants(
       }
 
       if (row.is_demo) {
+        // Mark in id-map so dependent translators (plans, goals, notes,
+        // alerts, risks, contacts) know to silently skip child rows
+        // rather than fail with "participant not in id-map".
+        map.markSkipped(row.id);
         log.record("skipped");
         continue;
       }

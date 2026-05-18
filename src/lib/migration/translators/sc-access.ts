@@ -102,6 +102,10 @@ export async function migrateSCParticipantAccess(
     try {
       const participantId = participantsMap.get(row.participant_id);
       if (!participantId) {
+        if (participantsMap.isSkipped(row.participant_id)) {
+          log.record("skipped");
+          continue;
+        }
         log.fail(row.id, `participant ${row.participant_id} not in id-map`);
         continue;
       }
