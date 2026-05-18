@@ -15,6 +15,10 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
+import { PageNav } from "@/components/page-nav";
+import { ListSearch } from "@/components/list-search";
+
+const PER_PAGE = 20;
 
 const TYPE_LABEL: Record<string, string> = {
   PROVIDER_DROP: "Provider drop",
@@ -26,20 +30,57 @@ const TYPE_LABEL: Record<string, string> = {
   OTHER: "Other",
 };
 
-export default async function EscalationsPage() {
+export default async function EscalationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
   const context = await resolvePortalContext("sc");
   const now = new Date();
+  const { page: pageParam, q: qParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const q = (qParam ?? "").trim();
 
-  const escalations = await db.escalation.findMany({
-    where: { orgId: context.activeOrg.id },
-    orderBy: [{ status: "asc" }, { openedAt: "desc" }],
-    include: {
-      participant: { select: { id: true, firstName: true, lastName: true } },
-    },
-  });
-
-  const open = escalations.filter((e) => e.status !== "RESOLVED");
-  const resolved = escalations.filter((e) => e.status === "RESOLVED");
+  const orgId = context.activeOrg.id;
+  const resolvedWhere = {
+    orgId,
+    status: "RESOLVED" as const,
+    ...(q
+      ? {
+          OR: [
+            { description: { contains: q, mode: "insensitive" as const } },
+            { resolution: { contains: q, mode: "insensitive" as const } },
+            {
+              participant: {
+                OR: [
+                  { firstName: { contains: q, mode: "insensitive" as const } },
+                  { lastName: { contains: q, mode: "insensitive" as const } },
+                ],
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+  const [open, resolved, resolvedTotal] = await Promise.all([
+    db.escalation.findMany({
+      where: { orgId, status: { in: ["OPEN", "IN_PROGRESS"] } },
+      orderBy: { openedAt: "desc" },
+      include: {
+        participant: { select: { id: true, firstName: true, lastName: true } },
+      },
+    }),
+    db.escalation.findMany({
+      where: resolvedWhere,
+      orderBy: { resolvedAt: "desc" },
+      include: {
+        participant: { select: { id: true, firstName: true, lastName: true } },
+      },
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
+    }),
+    db.escalation.count({ where: resolvedWhere }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -126,7 +167,12 @@ export default async function EscalationsPage() {
         </CardContent>
       </Card>
 
-      {resolved.length > 0 && (
+      <ListSearch
+        placeholder="Search resolved by participant or description"
+        defaultValue={q}
+      />
+
+      {resolvedTotal > 0 && (
         <Card>
           <CardHeader className="border-b">
             <CardTitle>Resolved</CardTitle>
@@ -136,7 +182,7 @@ export default async function EscalationsPage() {
           </CardHeader>
           <CardContent className="p-0">
             <ul className="divide-y">
-              {resolved.slice(0, 20).map((e) => (
+              {resolved.map((e) => (
                 <li key={e.id}>
                   <Link
                     href={`/sc/escalations/${e.id}`}
@@ -174,6 +220,13 @@ export default async function EscalationsPage() {
           </CardContent>
         </Card>
       )}
+
+      <PageNav
+        page={page}
+        perPage={PER_PAGE}
+        total={resolvedTotal}
+        preserve={{ q: q || undefined }}
+      />
     </div>
   );
 }

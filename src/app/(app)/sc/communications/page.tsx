@@ -13,9 +13,13 @@ import {
 } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
+import { PageNav } from "@/components/page-nav";
+import { ListSearch } from "@/components/list-search";
 
 import { CommunicationLogForm } from "./log-form";
 import { deleteCommunicationAction } from "./actions";
+
+const PER_PAGE = 25;
 
 const CHANNEL_LABEL: Record<string, string> = {
   PHONE: "Phone",
@@ -26,23 +30,51 @@ const CHANNEL_LABEL: Record<string, string> = {
   OTHER: "Other",
 };
 
-export default async function SCCommunicationsPage() {
+export default async function SCCommunicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
   const context = await resolvePortalContext("sc");
+  const { page: pageParam, q: qParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const q = (qParam ?? "").trim();
 
-  const [participants, logs] = await Promise.all([
+  const where = {
+    orgId: context.activeOrg.id,
+    ...(q
+      ? {
+          OR: [
+            { withParty: { contains: q, mode: "insensitive" as const } },
+            { summary: { contains: q, mode: "insensitive" as const } },
+            {
+              participant: {
+                OR: [
+                  { firstName: { contains: q, mode: "insensitive" as const } },
+                  { lastName: { contains: q, mode: "insensitive" as const } },
+                ],
+              },
+            },
+          ],
+        }
+      : {}),
+  };
+  const [participants, logs, total] = await Promise.all([
     db.participant.findMany({
       where: { orgId: context.activeOrg.id },
       select: { id: true, firstName: true, lastName: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
     db.communicationLog.findMany({
-      where: { orgId: context.activeOrg.id },
+      where,
       include: {
         participant: { select: { id: true, firstName: true, lastName: true } },
       },
       orderBy: { occurredAt: "desc" },
-      take: 50,
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
     }),
+    db.communicationLog.count({ where }),
   ]);
 
   return (
@@ -68,10 +100,15 @@ export default async function SCCommunicationsPage() {
         </CardContent>
       </Card>
 
+      <ListSearch
+        placeholder="Search by participant, party, or content"
+        defaultValue={q}
+      />
+
       <Card>
         <CardHeader className="border-b">
           <CardTitle>Recent</CardTitle>
-          <CardDescription>Most recent 50 across all participants.</CardDescription>
+          <CardDescription>Across all participants.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           {logs.length === 0 ? (
@@ -131,6 +168,13 @@ export default async function SCCommunicationsPage() {
           )}
         </CardContent>
       </Card>
+
+      <PageNav
+        page={page}
+        perPage={PER_PAGE}
+        total={total}
+        preserve={{ q: q || undefined }}
+      />
     </div>
   );
 }

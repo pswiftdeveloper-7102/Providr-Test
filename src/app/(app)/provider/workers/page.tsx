@@ -29,6 +29,10 @@ import {
   type CertStatus,
 } from "@/lib/certificates";
 import { WORKER_TYPE_LABEL } from "@/lib/worker-type";
+import { PageNav } from "@/components/page-nav";
+import { ListSearch } from "@/components/list-search";
+
+const PER_PAGE = 25;
 
 function StatusBadge({ status }: { status: CertStatus }) {
   if (status === "expired") {
@@ -47,14 +51,38 @@ function StatusBadge({ status }: { status: CertStatus }) {
   return <Badge variant="outline">{CERT_LABEL[status]}</Badge>;
 }
 
-export default async function WorkersListPage() {
+export default async function WorkersListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
   const context = await resolvePortalContext("provider");
   requireManager(context);
+  const { page: pageParam, q: qParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const q = (qParam ?? "").trim();
 
-  const workers = await db.worker.findMany({
-    where: { orgId: context.activeOrg.id },
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-  });
+  const where = {
+    orgId: context.activeOrg.id,
+    ...(q
+      ? {
+          OR: [
+            { firstName: { contains: q, mode: "insensitive" as const } },
+            { lastName: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+  const [workers, total] = await Promise.all([
+    db.worker.findMany({
+      where,
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
+    }),
+    db.worker.count({ where }),
+  ]);
 
   const now = new Date();
 
@@ -75,6 +103,11 @@ export default async function WorkersListPage() {
           New worker
         </Button>
       </header>
+
+      <ListSearch
+        placeholder="Search by name or email"
+        defaultValue={q}
+      />
 
       {workers.length === 0 ? (
         <Card>
@@ -146,6 +179,13 @@ export default async function WorkersListPage() {
           </Table>
         </Card>
       )}
+
+      <PageNav
+        page={page}
+        perPage={PER_PAGE}
+        total={total}
+        preserve={{ q: q || undefined }}
+      />
     </div>
   );
 }

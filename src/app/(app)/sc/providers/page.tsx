@@ -20,46 +20,57 @@ import {
 } from "@/components/ui/table";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
+import { PageNav } from "@/components/page-nav";
 
 import { ProviderFilters } from "./filters";
+
+const PER_PAGE = 25;
 
 export default async function SCProvidersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; filter?: string }>;
+  searchParams: Promise<{ q?: string; filter?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const context = await resolvePortalContext("sc");
 
   const q = (sp.q ?? "").trim();
   const onlyAccepting = sp.filter === "accepting";
+  const page = Math.max(1, Number(sp.page) || 1);
 
-  const providers = await db.externalProvider.findMany({
-    where: {
-      orgId: context.activeOrg.id,
-      ...(q
-        ? {
-            OR: [
-              { name: { contains: q, mode: "insensitive" } },
-              { serviceCategories: { contains: q, mode: "insensitive" } },
-              { contactName: { contains: q, mode: "insensitive" } },
-            ],
-          }
-        : {}),
-      ...(onlyAccepting
-        ? {
-            capacityStatus: { contains: "accept", mode: "insensitive" },
-          }
-        : {}),
-    },
-    include: {
-      engagements: {
-        where: { status: "ACTIVE" },
-        select: { id: true },
+  const where = {
+    orgId: context.activeOrg.id,
+    ...(q
+      ? {
+          OR: [
+            { name: { contains: q, mode: "insensitive" as const } },
+            { serviceCategories: { contains: q, mode: "insensitive" as const } },
+            { contactName: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+    ...(onlyAccepting
+      ? {
+          capacityStatus: { contains: "accept", mode: "insensitive" as const },
+        }
+      : {}),
+  };
+
+  const [providers, total] = await Promise.all([
+    db.externalProvider.findMany({
+      where,
+      include: {
+        engagements: {
+          where: { status: "ACTIVE" },
+          select: { id: true },
+        },
       },
-    },
-    orderBy: { name: "asc" },
-  });
+      orderBy: { name: "asc" },
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
+    }),
+    db.externalProvider.count({ where }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -180,6 +191,13 @@ export default async function SCProvidersPage({
           </CardContent>
         </Card>
       )}
+
+      <PageNav
+        page={page}
+        perPage={PER_PAGE}
+        total={total}
+        preserve={{ q, filter: onlyAccepting ? "accepting" : undefined }}
+      />
     </div>
   );
 }

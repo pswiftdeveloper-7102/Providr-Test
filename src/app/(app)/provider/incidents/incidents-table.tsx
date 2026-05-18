@@ -316,7 +316,8 @@ export function IncidentsTable({ rows }: { rows: IncidentRow[] }) {
 
       <div className="flex items-center justify-between border-t px-4 py-3 text-xs text-muted-foreground">
         <span>
-          {filtered.length} of {rows.length} row{rows.length === 1 ? "" : "s"}
+          {filtered.length} of {rows.length} on this page
+          {filtered.length !== rows.length && " (filters apply to current page)"}
         </span>
       </div>
     </Card>

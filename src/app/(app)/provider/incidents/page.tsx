@@ -8,14 +8,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { clockState } from "@/lib/incident-clock";
+import { PageNav } from "@/components/page-nav";
 
 import { IncidentsTable, type IncidentRow } from "./incidents-table";
 
-export default async function IncidentsListPage() {
+const PER_PAGE = 25;
+
+export default async function IncidentsListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
   const context = await resolvePortalContext("provider");
   const orgId = context.activeOrg.id;
   const now = new Date();
   const monthStart = startOfMonth(now);
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
 
   const [incidents, totalCount, openCount, mtdReportable] = await Promise.all([
     db.incident.findMany({
@@ -24,7 +33,8 @@ export default async function IncidentsListPage() {
         participant: { select: { firstName: true, lastName: true } },
       },
       orderBy: { occurredAt: "desc" },
-      take: 200,
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
     }),
     db.incident.count({ where: { orgId } }),
     db.incident.count({
@@ -173,6 +183,8 @@ export default async function IncidentsListPage() {
       </section>
 
       <IncidentsTable rows={rows} />
+
+      <PageNav page={page} perPage={PER_PAGE} total={totalCount} />
     </div>
   );
 }

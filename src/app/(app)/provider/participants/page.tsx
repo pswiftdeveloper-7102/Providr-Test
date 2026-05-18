@@ -21,22 +21,50 @@ import {
 import { db } from "@/lib/db";
 import { resolvePortalContext } from "@/lib/session";
 import { formatCents } from "@/lib/utils";
+import { PageNav } from "@/components/page-nav";
+import { ListSearch } from "@/components/list-search";
 
-export default async function ParticipantsListPage() {
+const PER_PAGE = 25;
+
+export default async function ParticipantsListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
   const context = await resolvePortalContext("provider");
+  const { page: pageParam, q: qParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const q = (qParam ?? "").trim();
 
-  const participants = await db.participant.findMany({
-    where: { orgId: context.activeOrg.id },
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-    include: {
-      plans: {
-        where: { status: "ACTIVE" },
-        orderBy: { startDate: "desc" },
-        take: 1,
-        include: { budgets: true },
+  const where = {
+    orgId: context.activeOrg.id,
+    ...(q
+      ? {
+          OR: [
+            { firstName: { contains: q, mode: "insensitive" as const } },
+            { lastName: { contains: q, mode: "insensitive" as const } },
+            { ndisNumber: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+  const [participants, total] = await Promise.all([
+    db.participant.findMany({
+      where,
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
+      include: {
+        plans: {
+          where: { status: "ACTIVE" },
+          orderBy: { startDate: "desc" },
+          take: 1,
+          include: { budgets: true },
+        },
       },
-    },
-  });
+    }),
+    db.participant.count({ where }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -54,6 +82,11 @@ export default async function ParticipantsListPage() {
           New participant
         </Button>
       </header>
+
+      <ListSearch
+        placeholder="Search by name or NDIS number"
+        defaultValue={q}
+      />
 
       {participants.length === 0 ? (
         <Card>
@@ -124,6 +157,13 @@ export default async function ParticipantsListPage() {
           </div>
         </Card>
       )}
+
+      <PageNav
+        page={page}
+        perPage={PER_PAGE}
+        total={total}
+        preserve={{ q: q || undefined }}
+      />
     </div>
   );
 }

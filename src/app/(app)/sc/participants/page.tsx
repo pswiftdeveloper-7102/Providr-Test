@@ -22,31 +22,59 @@ import {
 import { db } from "@/lib/db";
 import { formatCents } from "@/lib/utils";
 import { resolvePortalContext } from "@/lib/session";
+import { PageNav } from "@/components/page-nav";
+import { ListSearch } from "@/components/list-search";
 
-export default async function SCParticipantsPage() {
+const PER_PAGE = 25;
+
+export default async function SCParticipantsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>;
+}) {
   const context = await resolvePortalContext("sc");
   const now = new Date();
+  const { page: pageParam, q: qParam } = await searchParams;
+  const page = Math.max(1, Number(pageParam) || 1);
+  const q = (qParam ?? "").trim();
 
-  const participants = await db.participant.findMany({
-    where: { orgId: context.activeOrg.id },
-    include: {
-      plans: {
-        where: { status: "ACTIVE" },
-        include: { budgets: true },
-        orderBy: { startDate: "desc" },
-        take: 1,
+  const where = {
+    orgId: context.activeOrg.id,
+    ...(q
+      ? {
+          OR: [
+            { firstName: { contains: q, mode: "insensitive" as const } },
+            { lastName: { contains: q, mode: "insensitive" as const } },
+            { ndisNumber: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : {}),
+  };
+  const [participants, total] = await Promise.all([
+    db.participant.findMany({
+      where,
+      include: {
+        plans: {
+          where: { status: "ACTIVE" },
+          include: { budgets: true },
+          orderBy: { startDate: "desc" },
+          take: 1,
+        },
+        engagements: {
+          where: { status: "ACTIVE" },
+          select: { id: true },
+        },
+        escalations: {
+          where: { status: { in: ["OPEN", "IN_PROGRESS"] } },
+          select: { id: true },
+        },
       },
-      engagements: {
-        where: { status: "ACTIVE" },
-        select: { id: true },
-      },
-      escalations: {
-        where: { status: { in: ["OPEN", "IN_PROGRESS"] } },
-        select: { id: true },
-      },
-    },
-    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-  });
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
+    }),
+    db.participant.count({ where }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -63,6 +91,11 @@ export default async function SCParticipantsPage() {
           New participant
         </Button>
       </header>
+
+      <ListSearch
+        placeholder="Search by name or NDIS number"
+        defaultValue={q}
+      />
 
       {participants.length === 0 ? (
         <Card>
@@ -170,6 +203,13 @@ export default async function SCParticipantsPage() {
           </CardContent>
         </Card>
       )}
+
+      <PageNav
+        page={page}
+        perPage={PER_PAGE}
+        total={total}
+        preserve={{ q: q || undefined }}
+      />
     </div>
   );
 }
